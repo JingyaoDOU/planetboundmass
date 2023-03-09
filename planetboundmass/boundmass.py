@@ -4,9 +4,9 @@ import swiftsimio as sw
 import h5py
 import unyt
 import random
-from copy import deepcopy
-import sw_planet_tools as swtools
-from sw_planet_tools import VapourFrc
+from copy import deepcopy, copy
+import planetboundmass.sw_planet_tools as swtools
+from planetboundmass.sw_planet_tools import VapourFrc
 import pandas as pd
 import woma
 
@@ -114,6 +114,7 @@ class Bound:
         self.matid_tar_imp[self.npt <= self.pid] += Bound.id_body
 
     def find_bound(self):
+        # find bound particles
         bad_seeds = 0
         remnant_id = 1  # intialization
 

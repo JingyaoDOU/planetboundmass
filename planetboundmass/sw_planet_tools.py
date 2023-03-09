@@ -1,7 +1,8 @@
 import numpy as np
 import swiftsimio as sw
 import unyt
-
+from numba import njit
+import os
 
 G_cgs = 6.67408e-8  # in cgs
 Mearth_cgs = 5.97240e27  # in cgs
@@ -85,6 +86,7 @@ def loadsw_to_woma(snapshot, unit="mks", if_R_atmos=False):
     return pos, vel, h, m, rho, p, u, matid, R
 
 
+@njit
 def edacm(
     R=0.0,  # radius of the target in cgs
     r=0.0,  # radius of the impactor in cgs
@@ -145,17 +147,17 @@ def edacm(
 
 
 def load_PSvc_data(mat_id):
+    this_dir, _ = os.path.split(__file__)
     if mat_id == 400:
-        dataloc = "./data/s19_forsterite_vc.txt"
+        dataloc = os.path.join(this_dir, "data/s19_forsterite_vc.txt")
     elif mat_id == 401:
-        dataloc = "./data/s20_iron_vc.txt"
+        dataloc = os.path.join(this_dir, "data/s20_iron_vc.txt")
     elif mat_id == 402:
-        dataloc = "./data/s20_alloy_vc.txt"
+        dataloc = os.path.join(this_dir, "data/s20_alloy_vc.txt")
     else:
         raise ValueError(
             "Currently only have SESAME iron (401), SESAME alloy (402) and SESAME forsterite (400) vapour curve data"
         )
-
     data_PVsl = np.loadtxt(dataloc)
 
     return data_PVsl
@@ -188,6 +190,7 @@ class VapourFrc:
         self.mat_id = mat_id
         self.entropy = entropy * 1e-3  # switch to kJ/kg/K
         self.pressure = pressure * 1e-9  # switch to Gpa
+
         self.PVsl = load_PSvc_data(mat_id)
 
     def lever(self, left_point, right_point, s):
