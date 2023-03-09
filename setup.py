@@ -14,7 +14,14 @@ setuptools.setup(
     url="https://github.com/JingyaoDOU/planetboundmass",
     license="MIT",
     packages=["planetboundmass"],
-    install_requires=["requests"],
     python_requires=">=3.8",
-    install_requires=["numpy", "matplotlib", "pandas", "h5py","woma","unyt","swiftsimio"],
+    install_requires=[
+        "numpy",
+        "matplotlib",
+        "pandas",
+        "h5py",
+        "woma",
+        "unyt",
+        "swiftsimio",
+    ],
 )
