@@ -1,0 +1,851 @@
+import numpy as np
+import matplotlib.pyplot as plt
+import swiftsimio as sw
+import h5py
+import unyt
+import random
+from copy import deepcopy
+import sw_planet_tools as swtools
+from sw_planet_tools import VapourFrc
+import pandas as pd
+import woma
+
+
+class Bound:
+    G = 6.67408e-11  # m^3 kg^-1 s^-2
+    M_earth = 5.97240e24  # kg
+    R_earth = 6.371e6  # m
+    id_body = 200000000
+
+    def __init__(
+        self,
+        filename=None,
+        minibound=2000,
+        num_rem=1,
+        total_mass=1e9,
+        npt=1e9,
+        m_tar=None,
+        b=None,
+        v=None,
+        tolerance=1e-10,
+        maxit=1000,
+        max_bad_seeds=1000,
+        verbose=1,
+    ):
+        if not filename.endswith("hdf5"):
+            raise TypeError("Wrong filename, please check the file extension")
+        self.filename = filename
+
+        self.filename_check()
+        if not self.standard_filename:
+            print("not standard filename")
+            # if eosid_list is None:
+            #     raise ValueError(
+            #         "Non-standard filename, please provide an eos id dictionary"
+            #     )
+            self.total_mass = total_mass
+            self.npt = npt
+            # self.ironid = eosid_list["ironid"]
+            # self.siid = eosid_list["siid"]
+            # self.waterid = eosid_list["waterid"]
+            # self.atmosid = eosid_list["atmosid"]
+            self.m_tar = m_tar
+            self.b = b
+            self.v = v
+            self.attri = None
+
+        self.num_rem = num_rem
+        self.minibound = minibound
+        self.max_bad_seeds = max_bad_seeds
+        self.tolerance = tolerance
+        self.verbose = verbose
+
+        self.load_data()
+        self.material_dictionary()
+
+    def filename_check(self):
+        prefix_name = self.filename.split("/")[-1].split("_")[0]
+        if (prefix_name == "snapOUT") and (
+            len(self.filename.split("/")[-1].split("_")) > 9
+        ):
+            variable_list = self.filename.split("/")[-1].split("_")[1:]
+            self.m_tar = float(variable_list[2].replace("d", "."))
+            self.npt = int(variable_list[3][3:])
+            self.total_mass = float(variable_list[4].replace("d", "."))
+            self.v = float(variable_list[5][1:].replace("d", ".")[:-3])
+            self.b = float(variable_list[6].replace("d", ".")[1:])
+            self.hit_direction = variable_list[7]
+            self.attri = ("_".join(variable_list[8:])).split(".")[0]
+
+            self.standard_filename = True
+        else:
+            self.standard_filename = False
+
+    def load_data(self):
+        # load all the data from snapshot
+        data = sw.load(self.filename)
+        self.boxsize = data.metadata.boxsize[0]
+        box_mid = 0.5 * self.boxsize.to(unyt.m)
+        data.gas.coordinates.convert_to_mks()
+        pos = data.gas.coordinates - box_mid
+        self.pos = np.array(pos)
+        data.gas.densities.convert_to_cgs()
+        rho_cgs = np.array(data.gas.densities)
+        data.gas.densities.convert_to_mks()
+        self.rho_mks = np.array(data.gas.densities)
+        data.gas.internal_energies.convert_to_mks()
+        self.u = np.array(data.gas.internal_energies)
+        data.gas.pressures.convert_to_mks()
+        self.p_mks = np.array(data.gas.pressures)
+        data.gas.potentials.convert_to_mks()
+        self.pot = data.gas.potentials
+        self.matid = np.array(data.gas.material_ids)
+        self.pid = np.array(data.gas.particle_ids)
+        data.gas.masses.convert_to_mks()
+        self.m = np.array(data.gas.masses)
+        data.gas.velocities.convert_to_mks()
+        self.vel = np.array(data.gas.velocities)
+        data.gas.smoothing_lengths.convert_to_mks()
+        h = np.array(data.gas.smoothing_lengths)
+        # set different id for target and impactor materials
+        self.unique_matid = np.unique(self.matid)
+
+        self.matid_tar_imp = deepcopy(self.matid)
+        self.matid_tar_imp[self.npt <= self.pid] += Bound.id_body
+
+    def find_bound(self):
+        bad_seeds = 0
+        remnant_id = 1  # intialization
+
+        bound = np.zeros(len(self.pid))
+        bound_id = np.zeros(self.num_rem)
+        m_rem = np.zeros(self.num_rem)
+        num_par_rem = np.zeros(self.num_rem)  # Numbe of particles for each remnant
+        mass_ratio = np.zeros(self.num_rem)  # M_rem / M_total
+
+        element_ratio_array = {}
+        element_mass_array = {}
+
+        for mat_id in self.unique_matid:
+            array_name = self.Di_id_mat[mat_id] + "_ratio"
+            element_ratio_array[array_name] = np.zeros(self.num_rem)
+            array_name = self.Di_id_mat[mat_id] + "_mass"
+            element_mass_array[array_name] = np.zeros(self.num_rem)
+
+        while True:
+            if np.sum(bound == 0) < self.minibound:
+                if self.verbose:
+                    print("----------break------------")
+                    print("No enough particles left to be count as a remnant")
+                break
+
+            if bad_seeds > self.max_bad_seeds:
+                if self.verbose:
+                    print("----------break------------")
+                    print("Bad seeds larger than the maximum allowed bad seeds")
+                break
+
+            unbound_pid = self.pid[bound == 0]
+            unbound_pot = self.pot[bound == 0]
+
+            arg_init_min_potseed = np.argmin(unbound_pot)
+            init_min_pot_pid = unbound_pid[arg_init_min_potseed]
+
+            arg_init_min_potseed = np.where(np.in1d(self.pid, init_min_pot_pid))[0]
+
+            bound[arg_init_min_potseed] = remnant_id
+
+            bnd_m = np.squeeze(self.m[arg_init_min_potseed])
+
+            bnd_pos = np.squeeze(self.pos[arg_init_min_potseed])
+
+            bnd_vel = np.squeeze(self.vel[arg_init_min_potseed])
+
+            oldm = bnd_m / 10.0
+            count = 0
+            goback = False
+            a = 1
+            b = 1
+            maxit = 1000
+            # raise TypeError("check")
+            while (count <= maxit) & (np.abs(oldm - bnd_m) / oldm > self.tolerance):
+                oldm = bnd_m
+                sel = np.where(bound == 0)[0]
+                pid_tmp = self.pid[sel]
+                # compute kinetic velocities
+                ke = 0.5 * self.m[sel] * np.sum((self.vel[sel] - bnd_vel) ** 2, axis=1)
+                pe = (
+                    -Bound.G
+                    * bnd_m
+                    * self.m[sel]
+                    / np.hypot(
+                        self.pos[sel, 2] - bnd_pos[2],
+                        np.hypot(
+                            self.pos[sel, 0] - bnd_pos[0], self.pos[sel, 1] - bnd_pos[1]
+                        ),
+                    )
+                )
+
+                sel_bound = ke + pe < 0.0
+
+                if (count == 0) and (np.sum(sel_bound) == 0):
+                    bound[
+                        bound == remnant_id
+                    ] = -1  # through the bad seeds with remnant id -1
+                    bad_seeds += 1
+                    goback = True
+                    # print("Bad starting")
+                    break
+
+                if np.sum(sel_bound) > 0:
+                    pid_bnd = pid_tmp[sel_bound]
+                    arg_bound_in = np.where(np.in1d(self.pid, pid_bnd))[0]
+                    bound[arg_bound_in] = remnant_id
+                    bnd_m = np.sum(self.m[arg_bound_in])
+                    bnd_pos = (
+                        np.sum(
+                            self.pos[arg_bound_in] * self.m[arg_bound_in, np.newaxis],
+                            axis=0,
+                        )
+                        / bnd_m
+                    )
+                    bnd_vel = (
+                        np.sum(
+                            self.vel[arg_bound_in] * self.m[arg_bound_in, np.newaxis],
+                            axis=0,
+                        )
+                        / bnd_m
+                    )
+
+                count += 1
+
+            if goback:
+                continue
+
+            numbound = np.sum(bound == remnant_id)
+
+            if numbound < self.minibound:
+                bound[bound == remnant_id] = -1
+                print("Not enough particles in the bound group")
+                continue
+
+            arg_bound_out = bound == remnant_id
+            m_bound = self.m[arg_bound_out]
+            rem_mass = np.sum(m_bound)  # mass of the remnant in this turn
+            matid_bound = self.matid[arg_bound_out]
+
+            for mat_id in self.unique_matid:
+                element_mass = np.sum(m_bound[matid_bound == mat_id])
+
+                array_name = self.Di_id_mat[mat_id] + "_mass"
+                element_mass_array[array_name][remnant_id - 1] = (
+                    element_mass / Bound.M_earth
+                )
+                array_name = self.Di_id_mat[mat_id] + "_ratio"
+                element_ratio_array[array_name][remnant_id - 1] = (
+                    element_mass / rem_mass
+                )
+
+            bound_id[remnant_id - 1] = remnant_id
+            m_rem[remnant_id - 1] = rem_mass / Bound.M_earth
+            mass_ratio[remnant_id - 1] = rem_mass / Bound.M_earth / self.total_mass
+            num_par_rem[remnant_id - 1] = np.sum(bound == remnant_id)
+
+            remnant_id += 1
+            bad_seeds = 0
+
+            if remnant_id > self.num_rem:
+                # print('Reach maximum number of remnants')
+                # print('')
+                break
+
+        bound[bound == -1] = 0
+
+        # reorder the bound mass to print out the largest one first
+        arg_sel_desc = np.argsort(m_rem)[::-1]
+        bound_id = bound_id[arg_sel_desc]
+        mass_ratio = mass_ratio[arg_sel_desc]
+        num_par_rem = num_par_rem[arg_sel_desc]
+
+        for mat_id in self.unique_matid:
+            array_name = self.Di_id_mat[mat_id] + "_mass"
+            element_mass_array[array_name] = element_mass_array[array_name][
+                arg_sel_desc
+            ]
+            array_name = self.Di_id_mat[mat_id] + "_ratio"
+            element_ratio_array[array_name] = element_ratio_array[array_name][
+                arg_sel_desc
+            ]
+        m_rem = m_rem[arg_sel_desc]
+
+        cp_bid = deepcopy(bound)  # make a copy
+        for i in range(len(bound_id)):
+            if bound_id[i] != 0:
+                cp_bid[bound == bound_id[i]] = i + 1
+                bound_id[i] = i + 1
+
+        bound = cp_bid
+        self.bound_id = bound_id
+        self.bound = bound
+        self.mass_ratio = mass_ratio
+        self.m_rem = m_rem
+        self.num_par_rem = num_par_rem
+        self.element_mass_array = element_mass_array
+        self.element_ratio_array = element_ratio_array
+        if self.verbose != 0:
+            self.print_info()
+
+    def print_info(self):
+        i = 0
+        print("++++++++++++++++++++++++++++++++++++++++++++++")
+        print(
+            r"+ ALL BOUND MASS = %.2f %% total initial mass+"
+            % (100 * np.sum(self.mass_ratio))
+        )
+        print("++++++++++++++++++++++++++++++++++++++++++++++")
+        print("\n")
+        print("------------------------------------------")
+        while self.m_rem[i] > 0:
+            print("Remnant %d mass = %.5f \u004D\u2295" % ((i + 1), self.m_rem[i]))
+            print(r"Number of particles = %d" % self.num_par_rem[i])
+            print(r"Mass ratio = %.2f %%" % (100 * self.mass_ratio[i]))
+            for mat_id in self.unique_matid:
+                array_name = self.Di_id_mat[mat_id] + "_ratio"
+                print(
+                    "%s ratio = %.2f %%"
+                    % (
+                        self.Di_id_mat[mat_id],
+                        100 * self.element_ratio_array[array_name][i],
+                    )
+                )
+            print("")
+            print("------------------------------------------")
+            print("")
+            i += 1
+            if i > self.num_rem - 1:
+                break
+
+    def source_track(self, verbose=True):
+
+        # self.matid_tar_imp = self.matid
+        # self.matid_tar_imp[self.npt <= self.pid] += Bound.id_body
+
+        element_target_ratio_array = {}
+        for mat_id in self.unique_matid:
+            array_name = self.Di_id_mat[mat_id] + "_ratio_from_target"
+            element_target_ratio_array[array_name] = np.zeros(
+                np.count_nonzero(self.bound_id)
+            )
+        for rem_id in self.bound_id[self.bound_id != 0]:
+            for mat_id in self.unique_matid:
+                array_name = self.Di_id_mat[mat_id] + "_ratio_from_target"
+                mass_array_name = self.Di_id_mat[mat_id] + "_mass"
+                element_mass = self.element_mass_array[mass_array_name][int(rem_id) - 1]
+                target_ratio = (
+                    np.sum(
+                        self.m[
+                            np.logical_and(
+                                self.bound == rem_id, self.matid_tar_imp == mat_id
+                            )
+                        ]
+                    )
+                    / Bound.M_earth
+                    / element_mass
+                )
+                element_target_ratio_array[array_name][int(rem_id) - 1] = target_ratio
+
+                if verbose:
+                    print(
+                        "ratio = %.2f %% %s is from target"
+                        % (
+                            100 * target_ratio,
+                            self.Di_id_mat[mat_id],
+                        )
+                    )
+        self.element_target_ratio_array = element_target_ratio_array
+
+    def write_bound_id(self, samefile=True, savename=None):
+        if samefile:
+            filename = self.filename
+        else:
+            try:
+                filename = self.filename
+            except:
+                raise ValueError("please provide a filename")
+
+        f = h5py.File(filename, "r+")
+        if "GasParticles/boundIDs" in f:
+            del f["GasParticles/boundIDs"]
+        if "GasParticles/npt" in f:
+            del f["GasParticles/npt"]
+        f["GasParticles"].create_dataset("boundIDs", data=self.bound, dtype="d")
+        f["GasParticles"].create_dataset("npt", data=np.array([self.npt]), dtype="d")
+
+    def all_in_one(
+        self,
+        loc_tar=None,
+        loc_imp=None,
+    ):
+        assert loc_tar is not None
+        assert loc_imp is not None
+
+        Q_R, Q_R_norm, Q_RD_star_prime, M_tot, M_tar, M_imp = swtools.edacm(
+            b=self.b, v=self.v * 1e5, loc_tar=loc_tar, loc_imp=loc_imp
+        )
+        self.m_tar = M_tar
+        self.m_imp = M_imp
+        self.total_mass = M_tot
+
+        self.find_bound()
+
+        accretion_rate = (self.m_rem[0] - self.m_tar) / (self.total_mass - self.m_tar)
+
+        iron_key_list = np.array([100, 300, 401, 402])
+        core_id = np.intersect1d(iron_key_list, self.unique_matid)
+        core_array_name = self.Di_id_mat[int(core_id)] + "_ratio"
+
+        d = {
+            "M_tar": self.m_tar,
+            "M_total": self.total_mass,
+            "gamma": (self.total_mass - self.m_tar) / self.m_tar,
+            "npt": self.npt,
+            "b": self.b,
+            "v": self.v,
+            "hit_dir": self.hit_direction,
+            "attributes": self.attri,
+            "m_lr": self.m_rem[0],
+            "ratio_lr": self.mass_ratio[0],
+            "Z_Fe_lr": self.element_ratio_array[core_array_name][0],
+            "np_lr": self.num_par_rem[0],
+            "m_slr": self.m_rem[1:2],
+            "ratio_slr": self.mass_ratio[1:2],
+            "Z_Fe_slr": self.element_ratio_array[core_array_name][1:2],
+            "np_slr": self.num_par_rem[1:2],
+            "accretion_rate": accretion_rate,
+            "Q_R_norm": Q_R_norm,
+            "Q_RD_star_prime": Q_RD_star_prime,
+            "Q_R": Q_R,
+        }
+
+        return pd.Series(data=d)
+
+    def total_vap_fraction(self, verbose=1):
+        """
+        Calculates the total vapour fraction of core and mantle materials.
+        """
+        if not hasattr(self, "entropy"):
+            woma.load_eos_tables(["ANEOS_iron", "ANEOS_forsterite", "ANEOS_Fe85Si15"])
+            self.entropy = woma.eos.eos.A1_s_u_rho(self.u, self.rho_mks, self.matid)
+
+        core_id = np.intersect1d(self.iron_key_list, self.unique_matid)
+        core_arg = self.matid == core_id
+        mantle_id = np.intersect1d(self.si_key_list, self.unique_matid)
+        mantle_arg = self.matid == mantle_id
+
+        core_vf = VapourFrc(core_id, self.entropy[core_arg], self.p_mks[core_arg])
+        core_vapour_fraction = core_vf.vapour_fraction()
+        mantle_vf = VapourFrc(
+            mantle_id, self.entropy[mantle_arg], self.p_mks[mantle_arg]
+        )
+        mantle_vapour_fraction = mantle_vf.vapour_fraction()
+        self.core_vapour_fraction = np.sum(
+            self.m[core_arg] * core_vapour_fraction
+        ) / np.sum(self.m[core_arg])
+        self.mantle_vapour_fraction = np.sum(
+            self.m[mantle_arg] * mantle_vapour_fraction
+        ) / np.sum(self.m[mantle_arg])
+        if verbose:
+            print("{:.2f} % of core vapourized".format(100 * self.core_vapour_fraction))
+            print(
+                "{:.2f} % of mantle vapourized".format(
+                    100 * self.mantle_vapour_fraction
+                )
+            )
+
+    def rem_vap_fraction(self, rem_id=1, verbose=1):
+        """Given remnant id, calculated the vapour fraction in the remnant
+
+        Args:
+            rem_id (int, optional): Id of the remnant. Defaults to 1, which is the largest remnant.
+            verbose (int, optional): Print out the results or not. Defaults to 1.
+        """
+        if not hasattr(self, "entropy"):
+            woma.load_eos_tables(["ANEOS_iron", "ANEOS_forsterite", "ANEOS_Fe85Si15"])
+            self.entropy = woma.eos.eos.A1_s_u_rho(self.u, self.rho_mks, self.matid)
+
+        if not hasattr(self, "rem_core_vapour_fraction"):
+            self.rem_core_vapour_fraction = np.zeros(self.num_rem)
+        if not hasattr(self, "rem_mantle_vapour_fraction"):
+            self.rem_mantle_vapour_fraction = np.zeros(self.num_rem)
+
+        core_id = np.intersect1d(self.iron_key_list, self.unique_matid)
+        core_arg = np.logical_and(self.matid == core_id, self.bound == rem_id)
+
+        mantle_id = np.intersect1d(self.si_key_list, self.unique_matid)
+        mantle_arg = np.logical_and(self.matid == mantle_id, self.bound == rem_id)
+
+        core_vf = VapourFrc(core_id, self.entropy[core_arg], self.p_mks[core_arg])
+        core_vapour_fraction = core_vf.vapour_fraction()
+
+        mantle_vf = VapourFrc(
+            mantle_id, self.entropy[mantle_arg], self.p_mks[mantle_arg]
+        )
+        mantle_vapour_fraction = mantle_vf.vapour_fraction()
+
+        self.rem_core_vapour_fraction[rem_id - 1] = np.sum(
+            self.m[core_arg] * core_vapour_fraction
+        ) / np.sum(self.m[core_arg])
+        self.rem_mantle_vapour_fraction[rem_id - 1] = np.sum(
+            self.m[mantle_arg] * mantle_vapour_fraction
+        ) / np.sum(self.m[mantle_arg])
+
+        if verbose:
+            print(
+                "In the remnant {:d}: {:.2f} % of iron vapourized".format(
+                    rem_id, 100 * self.rem_core_vapour_fraction[rem_id - 1]
+                )
+            )
+            print(
+                "In the remnant {:d}: {:.2f} % of si vapourized".format(
+                    rem_id, 100 * self.rem_mantle_vapour_fraction[rem_id - 1]
+                )
+            )
+
+    def basic_plot(self, fig=None, mode=0, extent=None):
+        """
+        Plot the bound particles.
+        mode = 0, plot all remnants with different colors
+        mode = -1, only plot the largest remnant
+        mode = 1 show largest remnant only
+        mode = 2 show second largest remnant only
+        mode = 3 show third largest remnant only
+        ...
+        mode =10 show 10th largest remnant only
+
+        extent set the extent of the plot, [xmin, xmax, ymin, ymax,zmin,zmax], unit in Rearth radius.
+
+        """
+        colours = np.empty(len(self.pid), dtype=object)
+        sizes = np.zeros(len(self.pid))
+
+        for matid in np.unique(self.matid_tar_imp):
+            colours[self.matid_tar_imp == matid] = self.Di_id_colour[matid]
+            sizes[self.matid_tar_imp == matid] = self.Di_id_size[matid]
+
+        if fig is None:
+            fig = plt.figure(figsize=(12, 6))
+        else:
+            fig = fig
+        ax1, ax2 = fig.subplots(1, 2)
+        if mode == -1:
+
+            sel_lr_rem_arg = self.bound == 1
+            # recnter the position to the cm of the largest remnant
+            lr_center = np.sum(
+                self.pos[sel_lr_rem_arg] * self.m[sel_lr_rem_arg, np.newaxis], axis=0
+            ) / np.sum(self.m[sel_lr_rem_arg])
+            pos_lr = self.pos[sel_lr_rem_arg] - lr_center
+
+            colours_lr = colours[sel_lr_rem_arg]
+            sizes_lr = sizes[sel_lr_rem_arg]
+
+            # plot particles with z or x < 0.1 R_earth and sort them by z or x
+            arg_sort_pos_z = np.argsort(pos_lr[:, 2])
+            arg_sort_pos_x = np.argsort(pos_lr[:, 0])
+
+            search_sort_z = np.searchsorted(
+                pos_lr[arg_sort_pos_z, 2],
+                pos_lr[:, 2][pos_lr[:, 2] <= 0.1 * Bound.R_earth],
+            )
+            search_sort_x = np.searchsorted(
+                pos_lr[arg_sort_pos_x, 0],
+                pos_lr[:, 0][pos_lr[:, 0] <= 0.1 * Bound.R_earth],
+            )
+
+            arg_z = arg_sort_pos_z[search_sort_z]
+            arg_x = arg_sort_pos_x[search_sort_x]
+
+            ax1.scatter(
+                pos_lr[arg_z, 0] / Bound.R_earth,
+                pos_lr[arg_z, 1] / Bound.R_earth,
+                c=colours_lr[arg_z],
+                s=sizes_lr[arg_z],
+            )
+
+            ax2.scatter(
+                pos_lr[arg_x, 1] / Bound.R_earth,
+                pos_lr[arg_x, 2] / Bound.R_earth,
+                c=colours_lr[arg_x],
+                s=sizes_lr[arg_x],
+            )
+
+        elif mode == 0:
+            # if number of remnants is less than 9, then each element's color will be picked here
+            # recenterization
+            self.generate_rem_colour()
+
+            pos_center = np.sum(self.pos * self.m[:, np.newaxis], axis=0) / np.sum(
+                self.m
+            )
+            self.pos -= pos_center
+
+            for bnd_id in self.bound_id:
+                if bnd_id != 0:
+                    colours[self.bound == bnd_id] = self.rem_colours[int(bnd_id) - 1]
+
+            rem_labels = ["remnant {:d}".format(int(i)) for i in self.bound_id]
+
+            arg_bound = self.bound != 0
+
+            ax1.scatter(
+                self.pos[arg_bound, 0] / Bound.R_earth,
+                self.pos[arg_bound, 1] / Bound.R_earth,
+                s=sizes[arg_bound],
+                c=colours[arg_bound],
+                # label=rem_labels,
+            )
+
+            ax2.scatter(
+                self.pos[arg_bound, 1] / Bound.R_earth,
+                self.pos[arg_bound, 2] / Bound.R_earth,
+                s=sizes[arg_bound],
+                c=colours[arg_bound],
+                # label=rem_labels,
+            )
+            # ax1.legend()
+            # ax2.legend()
+
+        elif mode > 0:
+            self.generate_rem_colour()
+
+            pos_center = np.sum(self.pos * self.m[:, np.newaxis], axis=0) / np.sum(
+                self.m
+            )
+            self.pos -= pos_center
+
+            colours[self.bound == mode] = self.rem_colours[mode - 1]
+            sizes[self.bound == mode] = (
+                3 * sizes[self.bound == mode]
+            )  # make the remnant larger and clearer to see
+
+            arg_sort_pos_z = np.argsort(self.pos[:, 2])
+            arg_sort_pos_x = np.argsort(self.pos[:, 0])
+
+            search_sort_z = np.searchsorted(
+                self.pos[arg_sort_pos_z, 2],
+                self.pos[:, 2][self.pos[:, 2] <= 0.1 * Bound.R_earth],
+            )
+            search_sort_x = np.searchsorted(
+                self.pos[arg_sort_pos_x, 0],
+                self.pos[:, 0][self.pos[:, 0] <= 0.1 * Bound.R_earth],
+            )
+
+            arg_z = arg_sort_pos_z[search_sort_z]
+            arg_x = arg_sort_pos_x[search_sort_x]
+
+            ax1.scatter(
+                self.pos[arg_z, 0] / Bound.R_earth,
+                self.pos[arg_z, 1] / Bound.R_earth,
+                s=sizes[arg_z],
+                c=colours[arg_z],
+            )
+
+            ax2.scatter(
+                self.pos[arg_x, 1] / Bound.R_earth,
+                self.pos[arg_x, 2] / Bound.R_earth,
+                s=sizes[arg_x],
+                c=colours[arg_x],
+            )
+        else:
+            raise ValueError("mode must be an integer.")
+
+        if extent is not None:
+            ax1.set_xlim(extent[0], extent[1])
+            ax1.set_ylim(extent[2], extent[3])
+            ax2.set_xlim(extent[2], extent[3])
+            ax2.set_ylim(extent[4], extent[5])
+
+        ax1.set_xlabel(r"x Position ($R_\oplus$)", fontsize=16)
+        ax1.set_ylabel(r"y Position ($R_\oplus$)", fontsize=16)
+        ax1.set_facecolor("#111111")
+        ax2.set_xlabel(r"y Position ($R_\oplus$)", fontsize=16)
+        ax2.set_ylabel(r"z Position ($R_\oplus$)", fontsize=16)
+        ax2.set_facecolor("#111111")
+        fig.tight_layout()
+
+    def generate_rem_colour(self):
+        assert self.bound_id is not None, "bound_id is not generated yet."
+
+        default_colours_rem_array = [
+            "lime",
+            "cyan",
+            "yellow",
+            "blue",
+            "red",
+            "green",
+            "deeppink",
+            "olive",
+        ]
+        # if number of remnants exceed 8, then random generate some colours
+        if np.count_nonzero(self.bound_id) > 8:
+            rem_colours = []
+            for i in range(np.count_nonzero(self.bound_id)):
+                r = random.randint(0, 255)
+                g = random.randint(0, 255)
+                b = random.randint(0, 255)
+                hex_code = "#{:02x}{:02x}{:02x}".format(r, g, b)
+                rem_colours.append(hex_code)
+        else:
+            rem_colours = default_colours_rem_array[: np.count_nonzero(self.bound_id)]
+        self.rem_colours = rem_colours
+
+    def material_dictionary(self):
+        type_factor = 100
+        Di_mat_type = {
+            "idg": 0,
+            "Til": 1,
+            "HM80": 2,
+            "SESAME": 3,
+            "ANEOS": 4,
+        }
+        Di_mat_id = {
+            # Ideal Gas
+            "idg_HHe": Di_mat_type["idg"] * type_factor,
+            "idg_N2": Di_mat_type["idg"] * type_factor + 1,
+            "idg_CO2": Di_mat_type["idg"] * type_factor + 2,
+            # Tillotson
+            "Til_iron": Di_mat_type["Til"] * type_factor,
+            "Til_granite": Di_mat_type["Til"] * type_factor + 1,
+            "Til_water": Di_mat_type["Til"] * type_factor + 2,
+            "Til_basalt": Di_mat_type["Til"] * type_factor + 3,
+            # Hubbard & MacFarlane (1980) Uranus/Neptune
+            "HM80_HHe": Di_mat_type["HM80"] * type_factor,  # Hydrogen-helium atmosphere
+            "HM80_ice": Di_mat_type["HM80"] * type_factor + 1,  # H20-CH4-NH3 ice mix
+            "HM80_rock": Di_mat_type["HM80"] * type_factor
+            + 2,  # SiO2-MgO-FeS-FeO rock mix
+            # SESAME etc
+            "SESAME_iron": Di_mat_type["SESAME"] * type_factor,  # 2140
+            "SESAME_basalt": Di_mat_type["SESAME"] * type_factor + 1,  # 7530
+            "SESAME_water": Di_mat_type["SESAME"] * type_factor + 2,  # 7154
+            "SS08_water": Di_mat_type["SESAME"] * type_factor
+            + 3,  # Senft & Stewart (2008)
+            "AQUA": Di_mat_type["SESAME"] * type_factor + 4,  # Haldemann+2020
+            "CMS19_H": Di_mat_type["SESAME"] * type_factor
+            + 5,  # Chabrier+2019 Hydrogen
+            "CMS19_He": Di_mat_type["SESAME"] * type_factor + 6,  # Helium
+            "CD21_HHe": Di_mat_type["SESAME"] * type_factor + 7,  # H/He mixture Y=0.275
+            # ANEOS
+            "ANEOS_forsterite": Di_mat_type["ANEOS"]
+            * type_factor,  # Stewart et al. (2019)
+            "ANEOS_iron": Di_mat_type["ANEOS"] * type_factor + 1,  # Stewart (2020)
+            "ANEOS_Fe85Si15": Di_mat_type["ANEOS"] * type_factor + 2,  # Stewart (2020)
+        }
+        Di_mat_id.update(
+            {matname + "_2": mid + Bound.id_body for matname, mid in Di_mat_id.items()}
+        )
+
+        # Invert so the ID are the keys
+        self.Di_id_mat = {mat_id: mat for mat, mat_id in Di_mat_id.items()}
+
+        atmos_key_list = np.array([0, 1, 2, 200, 305, 306, 307])
+        self.atmos_key_list = np.concatenate(
+            (atmos_key_list, atmos_key_list + Bound.id_body)
+        )
+        water_key_list = np.array([102, 201, 302, 303, 304])
+        self.water_key_list = np.concatenate(
+            (water_key_list, water_key_list + Bound.id_body)
+        )
+        iron_key_list = np.array([100, 300, 401, 402])
+        self.iron_key_list = np.concatenate(
+            (iron_key_list, iron_key_list + Bound.id_body)
+        )
+        si_key_list = np.array([101, 103, 202, 301, 400])
+        self.si_key_list = np.concatenate((si_key_list, si_key_list + Bound.id_body))
+
+        self.define_scatter_colour()
+        self.define_scatter_size()
+
+        Di_id_colour = {}
+        Di_id_size = {}
+
+        for key in self.Di_id_mat.keys():
+            if key in self.atmos_key_list:
+                if key < Bound.id_body:
+                    Di_id_colour[key] = self.colour_atmos_tar
+                else:
+                    Di_id_colour[key] = self.colour_atmos_imp
+                Di_id_size[key] = self.size_atmos
+            elif key in self.water_key_list:
+                if key < Bound.id_body:
+                    Di_id_colour[key] = self.colour_water_tar
+                else:
+                    Di_id_colour[key] = self.colour_water_imp
+                Di_id_size[key] = self.size_water
+            elif key in self.iron_key_list:
+                if key < Bound.id_body:
+                    Di_id_colour[key] = self.colour_iron_tar
+                else:
+                    Di_id_colour[key] = self.colour_iron_imp
+                Di_id_size[key] = self.size_iron
+            elif key in self.si_key_list:
+                if key < Bound.id_body:
+                    Di_id_colour[key] = self.colour_si_tar
+                else:
+                    Di_id_colour[key] = self.colour_si_imp
+                Di_id_size[key] = self.size_si
+
+        self.Di_id_colour = Di_id_colour
+        # self.Di_id_colour = Di_id_colour
+        self.Di_id_size = Di_id_size
+
+        return
+
+    def define_scatter_colour(
+        self,
+        colour_iron_tar="tomato",
+        colour_si_tar="mediumseagreen",
+        colour_water_tar="skyblue",
+        colour_atmos_tar="aliceblue",
+        colour_iron_imp="sandybrown",
+        colour_si_imp="pink",
+        colour_water_imp="skyblue",
+        colour_atmos_imp="aliceblue",
+    ):
+        self.colour_iron_tar = colour_iron_tar
+        self.colour_si_tar = colour_si_tar
+        self.colour_water_tar = colour_water_tar
+        self.colour_atmos_tar = colour_atmos_tar
+
+        self.colour_iron_imp = colour_iron_imp
+        self.colour_si_imp = colour_si_imp
+        self.colour_water_imp = colour_water_imp
+        self.colour_atmos_imp = colour_atmos_imp
+
+    def define_scatter_size(self, size_iron=1, size_si=1, size_water=1, size_atmos=1):
+        self.size_iron = size_iron
+        self.size_si = size_si
+        self.size_water = size_water
+        self.size_atmos = size_atmos
+
+
+def main():
+    import cProfile
+    import pstats
+
+    loc = "/Users/qb20321/Desktop/SWIFTother/test_snap/snapOUT_PLANETimpact_0d0h_1d58085_npt173750_3d16170_v36d8387kms_b0d000_pX_EiEf.hdf5"
+    x = Bound(filename=loc, verbose=1, num_rem=6)
+
+    with cProfile.Profile() as pr:
+        x.find_bound()
+
+    stats = pstats.Stats(pr)
+    stats.sort_stats(pstats.SortKey.TIME)
+    stats.dump_stats(
+        filename="/Users/qb20321/Desktop/SWIFTother/test_snap/boundmass_profiling.prog"
+    )
+
+    # x.source_track()
+
+
+if __name__ == "__main__":
+    main()

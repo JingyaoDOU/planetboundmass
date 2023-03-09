@@ -1,1 +1,1 @@
-# planetboundmass
+# boundmass
