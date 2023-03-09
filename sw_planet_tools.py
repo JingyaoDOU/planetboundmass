@@ -2,8 +2,6 @@ import numpy as np
 import swiftsimio as sw
 import unyt
 
-# import planetboundmass as pbm
-
 
 G_cgs = 6.67408e-8  # in cgs
 Mearth_cgs = 5.97240e27  # in cgs
