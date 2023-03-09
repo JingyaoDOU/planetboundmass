@@ -61,7 +61,7 @@ class Bound:
         self.verbose = verbose
 
         self.load_data()
-        self.material_dictionary()
+        self.update_material_dictionary()
 
     def filename_check(self):
         prefix_name = self.filename.split("/")[-1].split("_")[0]
@@ -120,7 +120,9 @@ class Bound:
         bound = np.zeros(len(self.pid))
         bound_id = np.zeros(self.num_rem)
         m_rem = np.zeros(self.num_rem)
-        num_par_rem = np.zeros(self.num_rem)  # Numbe of particles for each remnant
+        num_par_rem = np.zeros(
+            self.num_rem, dtype=int
+        )  # Numbe of particles for each remnant
         mass_ratio = np.zeros(self.num_rem)  # M_rem / M_total
 
         element_ratio_array = {}
@@ -226,7 +228,7 @@ class Bound:
 
             if numbound < self.minibound:
                 bound[bound == remnant_id] = -1
-                print("Not enough particles in the bound group")
+                # print("Not enough particles in the bound group")
                 continue
 
             arg_bound_out = bound == remnant_id
@@ -325,7 +327,7 @@ class Bound:
             if i > self.num_rem - 1:
                 break
 
-    def source_track(self, verbose=True):
+    def source_track(self, verbose=1):
 
         # self.matid_tar_imp = self.matid
         # self.matid_tar_imp[self.npt <= self.pid] += Bound.id_body
@@ -337,6 +339,7 @@ class Bound:
                 np.count_nonzero(self.bound_id)
             )
         for rem_id in self.bound_id[self.bound_id != 0]:
+            print("-----------------------------------------------------------------")
             for mat_id in self.unique_matid:
                 array_name = self.Di_id_mat[mat_id] + "_ratio_from_target"
                 mass_array_name = self.Di_id_mat[mat_id] + "_mass"
@@ -356,24 +359,19 @@ class Bound:
 
                 if verbose:
                     print(
-                        "ratio = %.2f %% %s is from target"
+                        "In remnant %d, : ratio = %.2f %% %s is from target"
                         % (
+                            int(rem_id),
                             100 * target_ratio,
                             self.Di_id_mat[mat_id],
                         )
                     )
+            print("-----------------------------------------------------------------")
         self.element_target_ratio_array = element_target_ratio_array
 
-    def write_bound_id(self, samefile=True, savename=None):
-        if samefile:
-            filename = self.filename
-        else:
-            try:
-                filename = self.filename
-            except:
-                raise ValueError("please provide a filename")
+    def write_bound_id(self):
 
-        f = h5py.File(filename, "r+")
+        f = h5py.File(self.filename, "r+")
         if "GasParticles/boundIDs" in f:
             del f["GasParticles/boundIDs"]
         if "GasParticles/npt" in f:
@@ -511,7 +509,7 @@ class Bound:
                 )
             )
 
-    def basic_plot(self, fig=None, mode=0, extent=None):
+    def basic_plot(self, fig=None, mode=0, extent=None, equal_axis=False):
         """
         Plot the bound particles.
         mode = 0, plot all remnants with different colors
@@ -522,8 +520,8 @@ class Bound:
         ...
         mode =10 show 10th largest remnant only
 
-        extent set the extent of the plot, [xmin, xmax, ymin, ymax,zmin,zmax], unit in Rearth radius.
-
+        extent: set the extent of the plot, [xmin, xmax, ymin, ymax,zmin,zmax], unit in Rearth radius.
+        equal_axis: set the axis to be equal or not.
         """
         colours = np.empty(len(self.pid), dtype=object)
         sizes = np.zeros(len(self.pid))
@@ -580,6 +578,7 @@ class Bound:
             )
 
         elif mode == 0:
+
             # if number of remnants is less than 9, then each element's color will be picked here
             # recenterization
             self.generate_rem_colour()
@@ -659,6 +658,10 @@ class Bound:
         else:
             raise ValueError("mode must be an integer.")
 
+        if equal_axis:
+            ax1.set_aspect("equal", anchor="C")
+            ax2.set_aspect("equal", anchor="C")
+
         if extent is not None:
             ax1.set_xlim(extent[0], extent[1])
             ax1.set_ylim(extent[2], extent[3])
@@ -672,6 +675,14 @@ class Bound:
         ax2.set_ylabel(r"z Position ($R_\oplus$)", fontsize=16)
         ax2.set_facecolor("#111111")
         fig.tight_layout()
+
+        if fig is not None:
+            return fig
+        else:
+            plt.show()
+            plt.cla()
+            plt.clf()
+            plt.close()
 
     def generate_rem_colour(self):
         assert self.bound_id is not None, "bound_id is not generated yet."
@@ -687,7 +698,7 @@ class Bound:
             "olive",
         ]
         # if number of remnants exceed 8, then random generate some colours
-        if np.count_nonzero(self.bound_id) > 8:
+        if np.count_nonzero(self.bound_id) > len(default_colours_rem_array):
             rem_colours = []
             for i in range(np.count_nonzero(self.bound_id)):
                 r = random.randint(0, 255)
@@ -699,7 +710,7 @@ class Bound:
             rem_colours = default_colours_rem_array[: np.count_nonzero(self.bound_id)]
         self.rem_colours = rem_colours
 
-    def material_dictionary(self):
+    def update_material_dictionary(self, update=False):
         type_factor = 100
         Di_mat_type = {
             "idg": 0,
@@ -762,8 +773,9 @@ class Bound:
         si_key_list = np.array([101, 103, 202, 301, 400])
         self.si_key_list = np.concatenate((si_key_list, si_key_list + Bound.id_body))
 
-        self.define_scatter_colour()
-        self.define_scatter_size()
+        if not update:
+            self.define_scatter_colour()
+            self.define_scatter_size()
 
         Di_id_colour = {}
         Di_id_size = {}
@@ -795,7 +807,6 @@ class Bound:
                 Di_id_size[key] = self.size_si
 
         self.Di_id_colour = Di_id_colour
-        # self.Di_id_colour = Di_id_colour
         self.Di_id_size = Di_id_size
 
         return
@@ -843,8 +854,6 @@ def main():
     stats.dump_stats(
         filename="/Users/qb20321/Desktop/SWIFTother/test_snap/boundmass_profiling.prog"
     )
-
-    # x.source_track()
 
 
 if __name__ == "__main__":
