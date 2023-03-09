@@ -533,8 +533,10 @@ class Bound:
 
         if fig is None:
             fig = plt.figure(figsize=(12, 6))
+            output_fig = False
         else:
             fig = fig
+            output_fig = True
         ax1, ax2 = fig.subplots(1, 2)
         if mode == -1:
 
@@ -677,9 +679,10 @@ class Bound:
         ax2.set_facecolor("#111111")
         fig.tight_layout()
 
-        if fig is not None:
+        if output_fig:
             return fig
         else:
+            plt.show()
             plt.cla()
             plt.clf()
             plt.close()
