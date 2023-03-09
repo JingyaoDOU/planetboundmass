@@ -680,7 +680,6 @@ class Bound:
         if fig is not None:
             return fig
         else:
-            plt.show()
             plt.cla()
             plt.clf()
             plt.close()

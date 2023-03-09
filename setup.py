@@ -23,5 +23,6 @@ setuptools.setup(
         "woma",
         "unyt",
         "swiftsimio",
+        "scipy",
     ],
 )
