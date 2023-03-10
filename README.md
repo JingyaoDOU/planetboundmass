@@ -6,7 +6,8 @@ See the `tutorial.ipynb` notebook for an introductory tutorial and examples.
 
 Install
 =======
-
+First, activate your conda environment and install it with `pip``
 ```Shell
+conda activate env
 pip install git+https://github.com/JingyaoDOU/planetboundmass.git
 ```
