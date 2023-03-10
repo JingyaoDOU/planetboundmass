@@ -1,7 +1,6 @@
 import numpy as np
 import swiftsimio as sw
 import unyt
-from numba import njit
 import os
 
 G_cgs = 6.67408e-8  # in cgs
@@ -86,7 +85,6 @@ def loadsw_to_woma(snapshot, unit="mks", if_R_atmos=False):
     return pos, vel, h, m, rho, p, u, matid, R
 
 
-@njit
 def edacm(
     R=0.0,  # radius of the target in cgs
     r=0.0,  # radius of the impactor in cgs
