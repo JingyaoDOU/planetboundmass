@@ -192,7 +192,6 @@ class VapourFrc:
             self.sel = pressure < VapourFrc.forsterite_trip
             self.entropy = entropy[self.sel]
             self.pressure = pressure[self.sel]
-            print("test2")
         elif mat_id == 401:
             self.sel = pressure < VapourFrc.iron_trip
             self.entropy = entropy[self.sel]
