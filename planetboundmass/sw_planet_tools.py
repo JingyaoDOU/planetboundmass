@@ -187,13 +187,16 @@ class VapourFrc:
         self.mat_id = mat_id
         entropy *= 1e-3  # switch to kJ/kg/K
         pressure *= 1e-9  # switch to Gpa
-
+        self.vapour_frac = np.zeros(len(entropy))
         if mat_id == 400:
-            self.entropy = entropy[pressure < VapourFrc.forsterite_trip]
-            self.pressure = pressure[pressure < VapourFrc.forsterite_trip]
+            self.sel = pressure < VapourFrc.forsterite_trip
+            self.entropy = entropy[self.sel]
+            self.pressure = pressure[self.sel]
+            print("test2")
         elif mat_id == 401:
-            self.entropy = entropy[pressure < VapourFrc.iron_trip]
-            self.pressure = pressure[pressure < VapourFrc.iron_trip]
+            self.sel = pressure < VapourFrc.iron_trip
+            self.entropy = entropy[self.sel]
+            self.pressure = pressure[self.sel]
         else:
             raise ValueError(
                 "Currently only have iron and forsterite vapour curve loaded"
@@ -224,8 +227,8 @@ class VapourFrc:
         vapour_frac = self.lever(
             liquid_side_entropy * 1e3, vapour_side_entropy * 1e3, self.entropy
         )
-        self.vapour_frac = vapour_frac
-        return vapour_frac
+        self.vapour_frac[self.sel] = vapour_frac
+        return self.vapour_frac
 
 
 def main():
