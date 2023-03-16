@@ -166,9 +166,8 @@ def load_PSvc_data(mat_id):
 # Alloy_PVsl = load_PSvc_data(mat_id=402)
 class VapourFrc:
 
-    # Fors_PVsl  = Fors_PVsl
-    # Iron_PVsl  = Iron_PVsl
-    # Alloy_PVsl = Alloy_PVsl
+    iron_trip = 0.658993  # iron triple point
+    forsterite_trip = 0.159304  # forsterite triple point
 
     def __init__(self, mat_id, entropy, pressure):
         """initialization variables needed to calculated the vapour fraction.
@@ -186,9 +185,19 @@ class VapourFrc:
                 "Currently only have iron and forsterite vapour curve loaded"
             )
         self.mat_id = mat_id
-        self.entropy = entropy * 1e-3  # switch to kJ/kg/K
-        self.pressure = pressure * 1e-9  # switch to Gpa
+        entropy *= 1e-3  # switch to kJ/kg/K
+        pressure *= 1e-9  # switch to Gpa
 
+        if mat_id == 400:
+            self.entropy = entropy[pressure < VapourFrc.forsterite_trip]
+            self.pressure = pressure[pressure < VapourFrc.forsterite_trip]
+        elif mat_id == 401:
+            self.entropy = entropy[pressure < VapourFrc.iron_trip]
+            self.pressure = pressure[pressure < VapourFrc.iron_trip]
+        else:
+            raise ValueError(
+                "Currently only have iron and forsterite vapour curve loaded"
+            )
         self.PVsl = load_PSvc_data(mat_id)
 
     def lever(self, left_point, right_point, s):
@@ -204,6 +213,7 @@ class VapourFrc:
         return v_frac
 
     def vapour_fraction(self):
+
         liquid_side_entropy = np.interp(
             self.pressure, np.flip(self.PVsl[0]), np.flip(self.PVsl[2])
         )
