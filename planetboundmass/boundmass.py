@@ -60,9 +60,8 @@ class Bound:
         self.max_bad_seeds = max_bad_seeds
         self.tolerance = tolerance
         self.verbose = verbose
-
+        self.snap = Snap(filename, npt=self.npt)
         self.load_data()
-        self.update_material_dictionary()
 
     def filename_check(self):
         prefix_name = self.filename.split("/")[-1].split("_")[0]
@@ -81,38 +80,26 @@ class Bound:
             self.standard_filename = True
         else:
             self.standard_filename = False
+        #
 
     def load_data(self):
-        # load all the data from snapshot
-        data = sw.load(self.filename)
-        self.boxsize = data.metadata.boxsize[0]
-        box_mid = 0.5 * self.boxsize.to(unyt.m)
-        data.gas.coordinates.convert_to_mks()
-        pos = data.gas.coordinates - box_mid
-        self.pos = np.array(pos)
-        data.gas.densities.convert_to_cgs()
-        rho_cgs = np.array(data.gas.densities)
-        data.gas.densities.convert_to_mks()
-        self.rho_mks = np.array(data.gas.densities)
-        data.gas.internal_energies.convert_to_mks()
-        self.u = np.array(data.gas.internal_energies)
-        data.gas.pressures.convert_to_mks()
-        self.p_mks = np.array(data.gas.pressures)
-        data.gas.potentials.convert_to_mks()
-        self.pot = data.gas.potentials
-        self.matid = np.array(data.gas.material_ids)
-        self.pid = np.array(data.gas.particle_ids)
-        data.gas.masses.convert_to_mks()
-        self.m = np.array(data.gas.masses)
-        data.gas.velocities.convert_to_mks()
-        self.vel = np.array(data.gas.velocities)
-        data.gas.smoothing_lengths.convert_to_mks()
-        h = np.array(data.gas.smoothing_lengths)
-        # set different id for target and impactor materials
-        self.unique_matid = np.unique(self.matid)
+        # load all the data from self.snap
+        self.boxsize = self.snap.boxsize
+        self.pos = self.snap.pos
+        self.vel = self.snap.vel
+        self.rho_mks = self.snap.rho_mks
+        self.m = self.snap.m
+        self.pid = self.snap.pid
+        self.matid = self.snap.matid
+        self.pot = self.snap.pot
+        self.unique_matid = self.snap.unique_matid
+        self.u = self.snap.u
+        self.p_mks = self.snap.p_mks
+        self.matid_tar_imp = self.snap.matid_tar_imp
 
-        self.matid_tar_imp = deepcopy(self.matid)
-        self.matid_tar_imp[self.npt <= self.pid] += Bound.id_body
+        self.Di_id_colour = self.snap.Di_id_colour
+        self.Di_id_size = self.snap.Di_id_size
+        self.Di_id_mat = self.snap.Di_id_mat
 
     def find_bound(self):
         # find bound particles
@@ -511,7 +498,15 @@ class Bound:
                 )
             )
 
-    def basic_plot(self, fig=None, mode=0, extent=None, equal_axis=False):
+    def basic_plot(
+        self,
+        fig=None,
+        mode=0,
+        matid_plot=-1,
+        extent=None,
+        equal_axis=False,
+        color_mode0=False,
+    ):
         """
         Plot the bound particles.
         mode = 0, plot all remnants with different colors
@@ -521,9 +516,10 @@ class Bound:
         mode = 3 show third largest remnant only
         ...
         mode =10 show 10th largest remnant only
-
+        matid_plot: if you want to plot only one material, set this to the material id. -1 means all materials.
         extent: set the extent of the plot, [xmin, xmax, ymin, ymax,zmin,zmax], unit in Rearth radius.
         equal_axis: set the axis to be equal or not.
+        color_mode0: if you want the particles to be colored by their material id, set this to True.
         """
         colours = np.empty(len(self.pid), dtype=object)
         sizes = np.zeros(len(self.pid))
@@ -539,9 +535,14 @@ class Bound:
             fig = fig
             output_fig = True
         ax1, ax2 = fig.subplots(1, 2)
-        if mode == -1:
 
-            sel_lr_rem_arg = self.bound == 1
+        if mode == -1:
+            if matid_plot == -1:
+                sel_lr_rem_arg = self.bound == 1
+            else:
+                sel_lr_rem_arg = np.logical_and(
+                    self.bound == 1, self.matid == matid_plot
+                )
             # recnter the position to the cm of the largest remnant
             lr_center = np.sum(
                 self.pos[sel_lr_rem_arg] * self.m[sel_lr_rem_arg, np.newaxis], axis=0
@@ -591,14 +592,18 @@ class Bound:
                 self.m
             )
             self.pos -= pos_center
-
-            for bnd_id in self.bound_id:
-                if bnd_id != 0:
-                    colours[self.bound == bnd_id] = self.rem_colours[int(bnd_id) - 1]
+            if not color_mode0:
+                for bnd_id in self.bound_id:
+                    if bnd_id != 0:
+                        colours[self.bound == bnd_id] = self.rem_colours[
+                            int(bnd_id) - 1
+                        ]
 
             rem_labels = ["remnant {:d}".format(int(i)) for i in self.bound_id]
-
-            arg_bound = self.bound != 0
+            if matid_plot == -1:
+                arg_bound = self.bound != 0
+            else:
+                arg_bound = np.logical_and(self.bound != 0, self.matid == matid_plot)
 
             ax1.scatter(
                 self.pos[arg_bound, 0] / Bound.R_earth,
@@ -713,6 +718,131 @@ class Bound:
         else:
             rem_colours = default_colours_rem_array[: np.count_nonzero(self.bound_id)]
         self.rem_colours = rem_colours
+
+
+class Snap:
+    def __init__(self, filename, npt=1e9):
+        self.filename = filename
+        self.npt = npt
+        self.load_data()
+        self.update_material_dictionary()
+
+    def load_data(self):
+        # load all the data from snapshot
+        data = sw.load(self.filename)
+        self.boxsize = data.metadata.boxsize[0]
+        box_mid = 0.5 * self.boxsize.to(unyt.m)
+        data.gas.coordinates.convert_to_mks()
+        pos = data.gas.coordinates - box_mid
+        self.pos = np.array(pos)
+        data.gas.densities.convert_to_cgs()
+        rho_cgs = np.array(data.gas.densities)
+        data.gas.densities.convert_to_mks()
+        self.rho_mks = np.array(data.gas.densities)
+        data.gas.internal_energies.convert_to_mks()
+        self.u = np.array(data.gas.internal_energies)
+        data.gas.pressures.convert_to_mks()
+        self.p_mks = np.array(data.gas.pressures)
+        data.gas.potentials.convert_to_mks()
+        self.pot = data.gas.potentials
+        self.matid = np.array(data.gas.material_ids)
+        self.pid = np.array(data.gas.particle_ids)
+        data.gas.masses.convert_to_mks()
+        self.m = np.array(data.gas.masses)
+        data.gas.velocities.convert_to_mks()
+        self.vel = np.array(data.gas.velocities)
+        data.gas.smoothing_lengths.convert_to_mks()
+        h = np.array(data.gas.smoothing_lengths)
+        # set different id for target and impactor materials
+        self.unique_matid = np.unique(self.matid)
+
+        self.matid_tar_imp = deepcopy(self.matid)
+        self.matid_tar_imp[self.npt <= self.pid] += Bound.id_body
+
+    def splot(
+        self,
+        xy=True,
+        extent=None,
+        output_fig=False,
+        equal_axis=False,
+        sel_pid=None,
+        sel_matid=-1,
+        selp_size=3,
+        selp_color="cyan",
+    ):
+
+        colours = np.empty(len(self.pid), dtype=object)
+        sizes = np.zeros(len(self.pid))
+
+        for matid in np.unique(self.matid_tar_imp):
+            colours[self.matid_tar_imp == matid] = self.Di_id_colour[matid]
+            sizes[self.matid_tar_imp == matid] = self.Di_id_size[matid]
+        if sel_pid is not None:
+            colours[np.in1d(self.pid, sel_pid)] = selp_color
+            sizes[np.in1d(self.pid, sel_pid)] = (
+                selp_size * sizes[np.in1d(self.pid, sel_pid)]
+            )
+            sel_pos = np.ones_like(self.pid, dtype=bool)
+        if sel_matid >= 0:
+            sel_pos = (self.matid == sel_matid) | (
+                self.matid == (sel_matid + Bound.id_body)
+            )
+            colours = colours[sel_pos]
+            sizes = sizes[sel_pos]
+
+        plot_pos = self.pos[sel_pos]
+
+        fig = plt.figure(figsize=(8, 8))
+        ax = fig.add_subplot(111)
+        if xy:
+            arg_sort_pos_z = np.argsort(plot_pos[:, 2])
+            search_sort_z = np.searchsorted(
+                plot_pos[arg_sort_pos_z, 2],
+                plot_pos[:, 2][plot_pos[:, 2] <= 0.1 * Bound.R_earth],
+            )
+            arg_z = arg_sort_pos_z[search_sort_z]
+            ax.scatter(
+                plot_pos[arg_z, 0] / Bound.R_earth,
+                plot_pos[arg_z, 1] / Bound.R_earth,
+                s=sizes[arg_z],
+                c=colours[arg_z],
+            )
+        else:
+            arg_sort_pos_x = np.argsort(plot_pos[:, 0])
+            search_sort_x = np.searchsorted(
+                plot_pos[arg_sort_pos_x, 0],
+                plot_pos[:, 0][plot_pos[:, 0] <= 0.1 * Bound.R_earth],
+            )
+            arg_x = arg_sort_pos_x[search_sort_x]
+            ax.scatter(
+                plot_pos[arg_x, 1] / Bound.R_earth,
+                plot_pos[arg_x, 2] / Bound.R_earth,
+                s=sizes[arg_x],
+                c=colours[arg_x],
+            )
+        if extent is not None:
+            ax.set_xlim(extent[0], extent[1])
+            ax.set_ylim(extent[2], extent[3])
+
+        if equal_axis:
+            ax.set_aspect("equal", anchor="C")
+        if xy:
+            ax.set_xlabel(r"x Position ($R_\oplus$)", fontsize=16)
+            ax.set_ylabel(r"y Position ($R_\oplus$)", fontsize=16)
+        else:
+            ax.set_xlabel(r"y Position ($R_\oplus$)", fontsize=16)
+            ax.set_ylabel(r"z Position ($R_\oplus$)", fontsize=16)
+
+        ax.set_facecolor("#111111")
+        ax.tick_params(axis="both", which="major", labelsize=14)
+
+        if output_fig:
+            return fig
+        else:
+            plt.show()
+            plt.cla()
+            plt.clf()
+            plt.close()
 
     def update_material_dictionary(self, update=False):
         type_factor = 100
@@ -836,7 +966,9 @@ class Bound:
         self.colour_water_imp = colour_water_imp
         self.colour_atmos_imp = colour_atmos_imp
 
-    def define_scatter_size(self, size_iron=1, size_si=1, size_water=1, size_atmos=1):
+    def define_scatter_size(
+        self, size_iron=0.1, size_si=0.1, size_water=0.1, size_atmos=0.1
+    ):
         self.size_iron = size_iron
         self.size_si = size_si
         self.size_water = size_water
