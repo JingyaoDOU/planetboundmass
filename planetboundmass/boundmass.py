@@ -777,12 +777,14 @@ class Snap:
         for matid in np.unique(self.matid_tar_imp):
             colours[self.matid_tar_imp == matid] = self.Di_id_colour[matid]
             sizes[self.matid_tar_imp == matid] = self.Di_id_size[matid]
+
+        sel_pos = np.ones_like(self.pid, dtype=bool)
+
         if sel_pid is not None:
             colours[np.in1d(self.pid, sel_pid)] = selp_color
             sizes[np.in1d(self.pid, sel_pid)] = (
                 selp_size * sizes[np.in1d(self.pid, sel_pid)]
             )
-            sel_pos = np.ones_like(self.pid, dtype=bool)
         if sel_matid >= 0:
             sel_pos = (self.matid == sel_matid) | (
                 self.matid == (sel_matid + Bound.id_body)
