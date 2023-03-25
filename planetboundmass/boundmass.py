@@ -9,6 +9,7 @@ import planetboundmass.sw_planet_tools as swtools
 from planetboundmass.sw_planet_tools import VapourFrc
 import pandas as pd
 import woma
+import seaborn as sns
 
 
 class Bound:
@@ -736,7 +737,7 @@ class Snap:
         pos = data.gas.coordinates - box_mid
         self.pos = np.array(pos)
         data.gas.densities.convert_to_cgs()
-        rho_cgs = np.array(data.gas.densities)
+        self.rho_cgs = np.array(data.gas.densities)
         data.gas.densities.convert_to_mks()
         self.rho_mks = np.array(data.gas.densities)
         data.gas.internal_energies.convert_to_mks()
@@ -758,6 +759,19 @@ class Snap:
 
         self.matid_tar_imp = deepcopy(self.matid)
         self.matid_tar_imp[self.npt <= self.pid] += Bound.id_body
+
+    # plot the density and pressure distribution
+    def dis_rho_p(self, sel_matid=None, output_fig=False):
+        if sel_matid is None:
+            sel = np.ones(len(self.pid), dtype=bool)
+        else:
+            sel = self.matid == sel_matid
+
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
+        ax1 = sns.kdeplot(self.rho_cgs[sel], ax=ax1)
+        ax2 = sns.kdeplot(np.log10(self.p_mks[sel]), ax=ax2)
+        ax1.set(xlabel="Density (g/cm^3)", ylabel="distribution")
+        ax2.set(xlabel="Pressure (log10(Gpa))", ylabel="ditribution")
 
     def splot(
         self,
