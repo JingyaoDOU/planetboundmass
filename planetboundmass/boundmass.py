@@ -101,6 +101,8 @@ class Bound:
         self.Di_id_colour = self.snap.Di_id_colour
         self.Di_id_size = self.snap.Di_id_size
         self.Di_id_mat = self.snap.Di_id_mat
+        self.iron_key_list = self.snap.iron_key_list
+        self.si_key_list = self.snap.si_key_list
 
     def find_bound(self):
         # find bound particles
