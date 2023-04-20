@@ -331,7 +331,7 @@ class Bound:
                 np.count_nonzero(self.bound_id)
             )
         for rem_id in self.bound_id[self.bound_id != 0]:
-            print("-----------------------------------------------------------------")
+
             for mat_id in self.unique_matid:
                 array_name = self.Di_id_mat[mat_id] + "_ratio_from_target"
                 mass_array_name = self.Di_id_mat[mat_id] + "_mass"
@@ -351,6 +351,9 @@ class Bound:
 
                 if verbose:
                     print(
+                        "-----------------------------------------------------------------"
+                    )
+                    print(
                         "In remnant %d, : ratio = %.2f %% %s is from target"
                         % (
                             int(rem_id),
@@ -358,7 +361,9 @@ class Bound:
                             self.Di_id_mat[mat_id],
                         )
                     )
-            print("-----------------------------------------------------------------")
+                    print(
+                        "-----------------------------------------------------------------"
+                    )
         self.element_target_ratio_array = element_target_ratio_array
 
     def write_bound_id(self):
