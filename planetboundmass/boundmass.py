@@ -694,7 +694,7 @@ class Bound:
         fig.tight_layout()
 
         if output_fig:
-            return fig
+            return fig,ax1,ax2
         else:
             plt.show()
             plt.cla()
