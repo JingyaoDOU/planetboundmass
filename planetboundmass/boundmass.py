@@ -320,7 +320,6 @@ class Bound:
                 break
 
     def source_track(self, verbose=1):
-
         # self.matid_tar_imp = self.matid
         # self.matid_tar_imp[self.npt <= self.pid] += Bound.id_body
 
@@ -331,7 +330,6 @@ class Bound:
                 np.count_nonzero(self.bound_id)
             )
         for rem_id in self.bound_id[self.bound_id != 0]:
-
             for mat_id in self.unique_matid:
                 array_name = self.Di_id_mat[mat_id] + "_ratio_from_target"
                 mass_array_name = self.Di_id_mat[mat_id] + "_mass"
@@ -367,7 +365,6 @@ class Bound:
         self.element_target_ratio_array = element_target_ratio_array
 
     def write_bound_id(self):
-
         f = h5py.File(self.filename, "r+")
         if "GasParticles/boundIDs" in f:
             del f["GasParticles/boundIDs"]
@@ -449,11 +446,32 @@ class Bound:
         self.mantle_vapour_fraction = np.sum(
             self.m[mantle_arg] * mantle_vapour_fraction
         ) / np.sum(self.m[mantle_arg])
+
+        sel_super_mantle = mantle_vf.super_critical()
+        sel_super_core = core_vf.super_critical()
+
+        self.mantle_super_critical = np.sum(
+            self.m[mantle_arg][sel_super_mantle]
+        ) / np.sum(self.m[mantle_arg])
+        self.core_super_critical = np.sum(self.m[core_arg][sel_super_core]) / np.sum(
+            self.m[core_arg]
+        )
         if verbose:
             print("{:.2f} % of core vapourized".format(100 * self.core_vapour_fraction))
             print(
                 "{:.2f} % of mantle vapourized".format(
                     100 * self.mantle_vapour_fraction
+                )
+            )
+
+            print(
+                "{:.2f} % of core in super critical state".format(
+                    100 * self.core_super_critical
+                )
+            )
+            print(
+                "{:.2f} % of mantle in super critical state".format(
+                    100 * self.mantle_super_critical
                 )
             )
 
@@ -591,7 +609,6 @@ class Bound:
             )
 
         elif mode == 0:
-
             # if number of remnants is less than 9, then each element's color will be picked here
             # recenterization
             self.generate_rem_colour()
@@ -694,7 +711,7 @@ class Bound:
         fig.tight_layout()
 
         if output_fig:
-            return fig,ax1,ax2
+            return fig, ax1, ax2
         else:
             plt.show()
             plt.cla()
@@ -791,7 +808,6 @@ class Snap:
         selp_size=3,
         selp_color="cyan",
     ):
-
         colours = np.empty(len(self.pid), dtype=object)
         sizes = np.zeros(len(self.pid))
 

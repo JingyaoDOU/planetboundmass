@@ -21,7 +21,6 @@ def loadsw_to_woma(snapshot, unit="mks", if_R_atmos=False):
     # Load
     data = sw.load(snapshot)
     if unit == "mks":
-
         box_mid = 0.5 * data.metadata.boxsize[0].to(unyt.m)
         data.gas.coordinates.convert_to_mks()
         pos = np.array(data.gas.coordinates - box_mid)
@@ -41,7 +40,6 @@ def loadsw_to_woma(snapshot, unit="mks", if_R_atmos=False):
         # pid     = np.array(data.gas.particle_ids)
 
     elif unit == "cgs":
-
         box_mid = 0.5 * data.metadata.boxsize[0].to(unyt.cm)
         data.gas.coordinates.convert_to_cgs()
         pos = np.array(data.gas.coordinates - box_mid)
@@ -165,9 +163,11 @@ def load_PSvc_data(mat_id):
 # Iron_PVsl  = load_PSvc_data(mat_id=401)
 # Alloy_PVsl = load_PSvc_data(mat_id=402)
 class VapourFrc:
+    iron_critical_P = 0.658993  # iron critical point Pressue in Gpa
+    forsterite_critical_P = 0.159304  # forsterite critical point Pressue in Gpa
 
-    iron_trip = 0.658993  # iron triple point
-    forsterite_trip = 0.159304  # forsterite triple point
+    iron_critical_S = 3.78634  # iron critical point
+    forsterite_critical_S = 6.37921  # forsterite critical point entropy in KJ/kg/K
 
     def __init__(self, mat_id, entropy, pressure):
         """initialization variables needed to calculated the vapour fraction.
@@ -189,11 +189,19 @@ class VapourFrc:
         pressure *= 1e-9  # switch to Gpa
         self.vapour_frac = np.zeros(len(entropy))
         if mat_id == 400:
-            self.sel = pressure < VapourFrc.forsterite_trip
+            self.super_sel = np.logical_and(
+                pressure > VapourFrc.forsterite_critical_P,
+                entropy > VapourFrc.forsterite_critical_S,
+            )
+            self.sel = pressure < VapourFrc.forsterite_critical_P
             self.entropy = entropy[self.sel]
             self.pressure = pressure[self.sel]
         elif mat_id == 401:
-            self.sel = pressure < VapourFrc.iron_trip
+            self.super_sel = np.logical_and(
+                pressure > VapourFrc.iron_critical_P,
+                entropy > VapourFrc.iron_critical_S,
+            )
+            self.sel = pressure < VapourFrc.iron_critical_P
             self.entropy = entropy[self.sel]
             self.pressure = pressure[self.sel]
         else:
@@ -215,7 +223,6 @@ class VapourFrc:
         return v_frac
 
     def vapour_fraction(self):
-
         liquid_side_entropy = np.interp(
             self.pressure, np.flip(self.PVsl[0]), np.flip(self.PVsl[2])
         )
@@ -228,6 +235,9 @@ class VapourFrc:
         )
         self.vapour_frac[self.sel] = vapour_frac
         return self.vapour_frac
+
+    def super_critical(self):
+        return self.super_sel
 
 
 def main():
