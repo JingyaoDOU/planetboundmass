@@ -436,13 +436,16 @@ class Bound:
 
         core_vf = VapourFrc(core_id, self.entropy[core_arg], self.p_mks[core_arg])
         core_vapour_fraction = core_vf.vapour_fraction()
+
         mantle_vf = VapourFrc(
             mantle_id, self.entropy[mantle_arg], self.p_mks[mantle_arg]
         )
         mantle_vapour_fraction = mantle_vf.vapour_fraction()
+
         self.core_vapour_fraction = np.sum(
             self.m[core_arg] * core_vapour_fraction
         ) / np.sum(self.m[core_arg])
+
         self.mantle_vapour_fraction = np.sum(
             self.m[mantle_arg] * mantle_vapour_fraction
         ) / np.sum(self.m[mantle_arg])

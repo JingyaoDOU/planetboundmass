@@ -230,9 +230,7 @@ class VapourFrc:
             self.pressure, np.flip(self.PVsl[1]), np.flip(self.PVsl[3])
         )
 
-        vapour_frac = self.lever(
-            liquid_side_entropy * 1e3, vapour_side_entropy * 1e3, self.entropy
-        )
+        vapour_frac = self.lever(liquid_side_entropy, vapour_side_entropy, self.entropy)
         self.vapour_frac[self.sel] = vapour_frac
         return self.vapour_frac
 
