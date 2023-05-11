@@ -529,7 +529,8 @@ class Bound:
 
     def basic_plot(
         self,
-        fig=None,
+        ax1_in=None,
+        ax2_in=None,
         mode=0,
         matid_plot=-1,
         extent=None,
@@ -557,13 +558,15 @@ class Bound:
             colours[self.matid_tar_imp == matid] = self.Di_id_colour[matid]
             sizes[self.matid_tar_imp == matid] = self.Di_id_size[matid]
 
-        if fig is None:
-            fig = plt.figure(figsize=(12, 6))
+        fig = plt.figure(figsize=(12, 6))
+        ax1, ax2 = fig.subplots(1, 2)
+
+        if ax1 is None:
             output_fig = False
         else:
-            fig = fig
+            ax1 = ax1_in
+            ax2 = ax2_in
             output_fig = True
-        ax1, ax2 = fig.subplots(1, 2)
 
         if mode == -1:
             if matid_plot == -1:
