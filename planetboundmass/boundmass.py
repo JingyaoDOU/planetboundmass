@@ -879,7 +879,7 @@ class Snap:
         ax.tick_params(axis="both", which="major", labelsize=14)
 
         if output_fig:
-            return fig
+            return fig, ax
         else:
             plt.show()
             plt.cla()
