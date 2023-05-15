@@ -529,8 +529,6 @@ class Bound:
 
     def basic_plot(
         self,
-        ax1_in=None,
-        ax2_in=None,
         mode=0,
         matid_plot=-1,
         extent=None,
@@ -561,12 +559,12 @@ class Bound:
         fig = plt.figure(figsize=(12, 6))
         ax1, ax2 = fig.subplots(1, 2)
 
-        if ax1 is None:
-            output_fig = False
-        else:
-            ax1 = ax1_in
-            ax2 = ax2_in
-            output_fig = True
+        # if ax1 is None:
+        #     output_fig = False
+        # else:
+        #     ax1 = ax1_in
+        #     ax2 = ax2_in
+        #     output_fig = True
 
         if mode == -1:
             if matid_plot == -1:
@@ -716,13 +714,13 @@ class Bound:
         ax2.set_facecolor("#111111")
         fig.tight_layout()
 
-        if output_fig:
-            return fig, ax1, ax2
-        else:
-            plt.show()
-            plt.cla()
-            plt.clf()
-            plt.close()
+        # if output_fig:
+        #     return fig, ax1, ax2
+        # else:
+        plt.show()
+        plt.cla()
+        plt.clf()
+        plt.close()
 
     def generate_rem_colour(self):
         assert self.bound_id is not None, "bound_id is not generated yet."
