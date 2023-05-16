@@ -25,5 +25,6 @@ setuptools.setup(
         "unyt",
         "swiftsimio",
         "scipy",
+        "seaborn",
     ],
 )
