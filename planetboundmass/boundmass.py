@@ -801,6 +801,10 @@ class Snap:
         ax1.set(xlabel="Density (g/cm^3)", ylabel="distribution")
         ax2.set(xlabel="Pressure (log10(Gpa))", ylabel="ditribution")
 
+    def recenter(self, new_center):
+        """recenter the position to new_center."""
+        self.pos -= new_center
+
     def splot(
         self,
         xy=True,
