@@ -534,6 +534,9 @@ class Bound:
         extent=None,
         equal_axis=False,
         color_mode0=False,
+        sel_pid=None,
+        selp_size=3,
+        selp_color="cyan",
     ):
         """
         Plot the bound particles.
@@ -548,6 +551,9 @@ class Bound:
         extent: set the extent of the plot, [xmin, xmax, ymin, ymax,zmin,zmax], unit in Rearth radius.
         equal_axis: set the axis to be equal or not.
         color_mode0: if you want the particles to be colored by their material id, set this to True.
+        sel_pid: if you want to annotate additionally a subset of particles, set this to the particle id array.
+        selp_size: size of the annotated particles.
+        selp_color: color of the annotated particles.
         """
         colours = np.empty(len(self.pid), dtype=object)
         sizes = np.zeros(len(self.pid))
@@ -555,6 +561,12 @@ class Bound:
         for matid in np.unique(self.matid_tar_imp):
             colours[self.matid_tar_imp == matid] = self.Di_id_colour[matid]
             sizes[self.matid_tar_imp == matid] = self.Di_id_size[matid]
+
+        if sel_pid is not None:
+            colours[np.in1d(self.pid, sel_pid)] = selp_color
+            sizes[np.in1d(self.pid, sel_pid)] = (
+                selp_size * sizes[np.in1d(self.pid, sel_pid)]
+            )
 
         fig = plt.figure(figsize=(12, 6))
         ax1, ax2 = fig.subplots(1, 2)
