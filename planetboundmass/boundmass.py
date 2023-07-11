@@ -456,24 +456,28 @@ class Bound:
         self.mantle_super_critical = np.sum(
             self.m[mantle_arg][sel_super_mantle]
         ) / np.sum(self.m[mantle_arg])
+
         self.core_super_critical = np.sum(self.m[core_arg][sel_super_core]) / np.sum(
             self.m[core_arg]
         )
+
         if verbose:
-            print("{:.2f} % of core vapourized".format(100 * self.core_vapour_fraction))
             print(
-                "{:.2f} % of mantle vapourized".format(
+                "{:.2f} %% of core vapourized".format(100 * self.core_vapour_fraction)
+            )
+            print(
+                "{:.2f} %% of mantle vapourized".format(
                     100 * self.mantle_vapour_fraction
                 )
             )
 
             print(
-                "{:.2f} % of core in super critical state".format(
+                "{:.2f} %% of core in super critical state".format(
                     100 * self.core_super_critical
                 )
             )
             print(
-                "{:.2f} % of mantle in super critical state".format(
+                "{:.2f} %% of mantle in super critical state".format(
                     100 * self.mantle_super_critical
                 )
             )
