@@ -832,6 +832,21 @@ class Snap:
         selp_size=3,
         selp_color="cyan",
     ):
+        """_summary_
+
+        Args:
+            xy (bool, optional): _description_. Defaults to True.
+            extent (list, optional): [xmin,xmax,ymin,ymax,zmin,zmax] Defaults to None.
+            output_fig (bool, optional): _description_. Defaults to False.
+            equal_axis (bool, optional): _description_. Defaults to False.
+            sel_pid (_type_, optional): _description_. Defaults to None.
+            sel_matid (int, optional): _description_. Defaults to -1.
+            selp_size (int, optional): _description_. Defaults to 3.
+            selp_color (str, optional): _description_. Defaults to "cyan".
+
+        Returns:
+           plt.figurer:return particles plot
+        """
         colours = np.empty(len(self.pid), dtype=object)
         sizes = np.zeros(len(self.pid))
 
@@ -855,20 +870,15 @@ class Snap:
 
         if extent is not None:
             extent *= Bound.R_earth
-            if xy:
-                sel_pos[
-                    (self.pos[:, 0] > extent[0])
-                    & (self.pos[:, 0] < extent[1])
-                    & (self.pos[:, 1] > extent[2])
-                    & (self.pos[:, 1] < extent[3])
-                ] = 0
-            else:
-                sel_pos[
-                    (self.pos[:, 1] > extent[0])
-                    & (self.pos[:, 1] < extent[1])
-                    & (self.pos[:, 2] > extent[2])
-                    & (self.pos[:, 2] < extent[3])
-                ] = 0
+
+            sel_pos[
+                (self.pos[:, 0] > extent[0])
+                & (self.pos[:, 0] < extent[1])
+                & (self.pos[:, 1] > extent[2])
+                & (self.pos[:, 1] < extent[3])
+                & (self.pos[:, 2] > extent[4])
+                & (self.pos[:, 2] < extent[5])
+            ] = 0
 
         plot_pos = self.pos[sel_pos]
 
