@@ -853,6 +853,23 @@ class Snap:
             colours = colours[sel_pos]
             sizes = sizes[sel_pos]
 
+        if extent is not None:
+            extent *= Bound.R_earth
+            if xy:
+                sel_pos[
+                    (self.pos[:, 0] > extent[0])
+                    & (self.pos[:, 0] < extent[1])
+                    & (self.pos[:, 1] > extent[2])
+                    & (self.pos[:, 1] < extent[3])
+                ] = 0
+            else:
+                sel_pos[
+                    (self.pos[:, 1] > extent[0])
+                    & (self.pos[:, 1] < extent[1])
+                    & (self.pos[:, 2] > extent[2])
+                    & (self.pos[:, 2] < extent[3])
+                ] = 0
+
         plot_pos = self.pos[sel_pos]
 
         fig = plt.figure(figsize=(8, 8))
@@ -883,9 +900,6 @@ class Snap:
                 s=sizes[arg_x],
                 c=colours[arg_x],
             )
-        if extent is not None:
-            ax.set_xlim(extent[0], extent[1])
-            ax.set_ylim(extent[2], extent[3])
 
         if equal_axis:
             ax.set_aspect("equal", anchor="C")
