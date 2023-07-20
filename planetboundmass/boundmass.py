@@ -823,7 +823,7 @@ class Snap:
 
     def splot(
         self,
-        xy=True,
+        aspect="xy",
         extent=None,
         output_fig=False,
         equal_axis=False,
@@ -885,7 +885,7 @@ class Snap:
 
         fig = plt.figure(figsize=(8, 8))
         ax = fig.add_subplot(111)
-        if xy:
+        if aspect == "xy":
             arg_sort_pos_z = np.argsort(plot_pos[:, 2])
             search_sort_z = np.searchsorted(
                 plot_pos[arg_sort_pos_z, 2],
@@ -898,7 +898,11 @@ class Snap:
                 s=sizes[arg_z],
                 c=colours[arg_z],
             )
-        else:
+
+            ax.set_xlabel(r"x Position ($R_\oplus$)", fontsize=16)
+            ax.set_ylabel(r"y Position ($R_\oplus$)", fontsize=16)
+
+        elif aspect == "yz":
             arg_sort_pos_x = np.argsort(plot_pos[:, 0])
             search_sort_x = np.searchsorted(
                 plot_pos[arg_sort_pos_x, 0],
@@ -911,15 +915,26 @@ class Snap:
                 s=sizes[arg_x],
                 c=colours[arg_x],
             )
+            ax.set_xlabel(r"y Position ($R_\oplus$)", fontsize=16)
+            ax.set_ylabel(r"z Position ($R_\oplus$)", fontsize=16)
+        else:
+            arg_sort_pos_x = np.argsort(plot_pos[:, 1])
+            search_sort_x = np.searchsorted(
+                plot_pos[arg_sort_pos_x, 1],
+                plot_pos[:, 1][plot_pos[:, 1] <= 0.1 * Bound.R_earth],
+            )
+            arg_x = arg_sort_pos_x[search_sort_x]
+            ax.scatter(
+                plot_pos[arg_x, 0] / Bound.R_earth,
+                plot_pos[arg_x, 2] / Bound.R_earth,
+                s=sizes[arg_x],
+                c=colours[arg_x],
+            )
+            ax.set_xlabel(r"x Position ($R_\oplus$)", fontsize=16)
+            ax.set_ylabel(r"z Position ($R_\oplus$)", fontsize=16)
 
         if equal_axis:
             ax.set_aspect("equal", anchor="C")
-        if xy:
-            ax.set_xlabel(r"x Position ($R_\oplus$)", fontsize=16)
-            ax.set_ylabel(r"y Position ($R_\oplus$)", fontsize=16)
-        else:
-            ax.set_xlabel(r"y Position ($R_\oplus$)", fontsize=16)
-            ax.set_ylabel(r"z Position ($R_\oplus$)", fontsize=16)
 
         ax.set_facecolor("#111111")
         ax.tick_params(axis="both", which="major", labelsize=14)
