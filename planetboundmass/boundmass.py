@@ -585,10 +585,10 @@ class Bound:
 
         if mode < 0:
             if matid_plot == -1:
-                sel_lr_rem_arg = self.bound == mode
+                sel_lr_rem_arg = self.bound == -mode
             else:
                 sel_lr_rem_arg = np.logical_and(
-                    self.bound == mode, self.matid == matid_plot
+                    self.bound == -mode, self.matid == matid_plot
                 )
             # recnter the position to the cm of the largest remnant
             lr_center = np.sum(
