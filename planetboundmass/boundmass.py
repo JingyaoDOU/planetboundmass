@@ -539,6 +539,7 @@ class Bound:
         equal_axis=False,
         color_mode0=False,
         sel_pid=None,
+        sel_matid=None,
         selp_size=3,
         selp_color="cyan",
     ):
@@ -571,6 +572,12 @@ class Bound:
             sizes[np.in1d(self.pid, sel_pid)] = (
                 selp_size * sizes[np.in1d(self.pid, sel_pid)]
             )
+        if sel_matid >= 0:
+            sel_pos = (self.matid == sel_matid) | (
+                self.matid == (sel_matid + Bound.id_body)
+            )
+            colours = colours[sel_pos]
+            sizes = sizes[sel_pos]
 
         fig = plt.figure(figsize=(12, 6))
         ax1, ax2 = fig.subplots(1, 2)
@@ -582,12 +589,12 @@ class Bound:
         #     ax2 = ax2_in
         #     output_fig = True
 
-        if mode == -1:
+        if mode < 0:
             if matid_plot == -1:
-                sel_lr_rem_arg = self.bound == 1
+                sel_lr_rem_arg = self.bound == mode
             else:
                 sel_lr_rem_arg = np.logical_and(
-                    self.bound == 1, self.matid == matid_plot
+                    self.bound == mode, self.matid == matid_plot
                 )
             # recnter the position to the cm of the largest remnant
             lr_center = np.sum(
