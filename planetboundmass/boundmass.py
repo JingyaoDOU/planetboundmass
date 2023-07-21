@@ -539,13 +539,13 @@ class Bound:
         equal_axis=False,
         color_mode0=False,
         sel_pid=None,
-        sel_matid=None,
         selp_size=3,
         selp_color="cyan",
     ):
         """
         Plot the bound particles.
         mode = 0, plot all remnants with different colors
+        mode = -2, only plot the second largest remnant
         mode = -1, only plot the largest remnant
         mode = 1 show largest remnant only
         mode = 2 show second largest remnant only
@@ -572,12 +572,6 @@ class Bound:
             sizes[np.in1d(self.pid, sel_pid)] = (
                 selp_size * sizes[np.in1d(self.pid, sel_pid)]
             )
-        if sel_matid >= 0:
-            sel_pos = (self.matid == sel_matid) | (
-                self.matid == (sel_matid + Bound.id_body)
-            )
-            colours = colours[sel_pos]
-            sizes = sizes[sel_pos]
 
         fig = plt.figure(figsize=(12, 6))
         ax1, ax2 = fig.subplots(1, 2)
