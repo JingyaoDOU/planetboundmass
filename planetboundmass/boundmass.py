@@ -421,6 +421,11 @@ class Bound:
 
         return pd.Series(data=d)
 
+    def calculate_entropy(self):
+        if not hasattr(self, "entropy"):
+            woma.load_eos_tables(["ANEOS_iron", "ANEOS_forsterite", "ANEOS_Fe85Si15"])
+            self.entropy = woma.eos.eos.A1_s_u_rho(self.u, self.rho_mks, self.matid)
+
     def total_vap_fraction(self, verbose=1):
         """
         Calculates the total vapour fraction of core and mantle materials.
