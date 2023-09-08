@@ -877,7 +877,7 @@ class Snap:
             sizes = sizes[sel_pos]
 
         if extent is not None:
-            extent = np.array(extent)
+            extent = np.array(extent, dtype=float)
             extent *= Bound.R_earth
 
             sel_pos[
