@@ -890,7 +890,7 @@ class Snap:
             ] = 0
 
         plot_pos = self.pos[sel_pos]
-
+        plot_colours = colours[sel_pos]
         fig = plt.figure(figsize=(8, 8))
         ax = fig.add_subplot(111)
         if aspect == "xy":
@@ -904,7 +904,7 @@ class Snap:
                 plot_pos[arg_z, 0] / Bound.R_earth,
                 plot_pos[arg_z, 1] / Bound.R_earth,
                 s=sizes[arg_z],
-                c=colours[arg_z],
+                c=plot_colours[arg_z],
             )
 
             ax.set_xlabel(r"x Position ($R_\oplus$)", fontsize=16)
@@ -936,7 +936,7 @@ class Snap:
                 plot_pos[arg_x, 0] / Bound.R_earth,
                 plot_pos[arg_x, 2] / Bound.R_earth,
                 s=sizes[arg_x],
-                c=colours[arg_x],
+                c=plot_colours[arg_x],
             )
             ax.set_xlabel(r"x Position ($R_\oplus$)", fontsize=16)
             ax.set_ylabel(r"z Position ($R_\oplus$)", fontsize=16)
