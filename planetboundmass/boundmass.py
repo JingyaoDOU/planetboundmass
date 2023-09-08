@@ -882,11 +882,11 @@ class Snap:
 
             sel_pos[
                 (self.pos[:, 0] < extent[0])
-                & (self.pos[:, 0] > extent[1])
-                & (self.pos[:, 1] < extent[2])
-                & (self.pos[:, 1] > extent[3])
-                & (self.pos[:, 2] < extent[4])
-                & (self.pos[:, 2] > extent[5])
+                | (self.pos[:, 0] > extent[1])
+                | (self.pos[:, 1] < extent[2])
+                | (self.pos[:, 1] > extent[3])
+                | (self.pos[:, 2] < extent[4])
+                | (self.pos[:, 2] > extent[5])
             ] = 0
 
         plot_pos = self.pos[sel_pos]
