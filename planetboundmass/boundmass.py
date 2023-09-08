@@ -745,7 +745,9 @@ class Bound:
         plt.close()
 
     def generate_rem_colour(self):
-        assert self.bound_id is not None, "bound_id is not generated yet."
+        assert (
+            self.bound_id is not None
+        ), "bound_id is not generated yet. Please run find_bound() first."
 
         default_colours_rem_array = [
             "lime",
@@ -875,7 +877,7 @@ class Snap:
             sizes = sizes[sel_pos]
 
         if extent is not None:
-            extent.astype(float)
+            extent = np.array(extent)
             extent *= Bound.R_earth
 
             sel_pos[
