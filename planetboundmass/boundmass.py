@@ -805,7 +805,7 @@ class Snap:
         data.gas.velocities.convert_to_mks()
         self.vel = np.array(data.gas.velocities)
         data.gas.smoothing_lengths.convert_to_mks()
-        h = np.array(data.gas.smoothing_lengths)
+        self.h = np.array(data.gas.smoothing_lengths)
         # set different id for target and impactor materials
         self.unique_matid = np.unique(self.matid)
 
