@@ -774,6 +774,10 @@ class Bound:
 
 
 class Snap:
+    G = 6.67408e-11  # m^3 kg^-1 s^-2
+    M_earth = 5.97240e24  # kg
+    R_earth = 6.371e6  # m
+
     def __init__(self, filename, npt=1e9):
         self.filename = filename
         self.npt = npt
@@ -829,10 +833,52 @@ class Snap:
         """recenter the position to new_center."""
         self.pos -= new_center
 
-    def v_rms(self):
-        """Calculate the root mean square velocity in m/s (mks unit). Normally useful when checking cooling snapshot."""
+    def pos_com_center(self):
+        """center the coordinates of particles by the center of mass."""
+        pos_centerM = np.sum(self.pos * self.m[:, np.newaxis], axis=0) / np.sum(self.m)
+        self.pos -= pos_centerM
 
-        return np.sqrt(np.sum(self.vel**2) / len(self.m))
+        return 0
+
+    def vel_com_center(self):
+        """center the velocities of particles by the center of mass."""
+        vel_centerM = np.sum(self.vel * self.m[:, np.newaxis], axis=0) / np.sum(self.m)
+        self.vel -= vel_centerM
+
+        return 0
+
+    def dis_to_com(self, if_R_atmos=False):
+        """Distance to the center of mass, normall used to calculate the radius
+        Set "if_R_atmos" to True if calculate the radius including atmospher layer.
+        """
+        self.pos_com_center()
+
+        atmos_key_list = np.array([0, 1, 2, 200, 305, 306, 307])
+        uniq_mat = np.unique(self.matid)
+        atmos_id = np.intersect1d(atmos_key_list, uniq_mat)
+
+        if not if_R_atmos:
+            pos_to_use = self.pos[self.matid != atmos_id]
+        else:
+            pos_to_use = self.pos
+
+        xy = np.hypot(pos_to_use[:, 0], pos_to_use[:, 1])
+        self.dis_com = np.hypot(xy, pos_to_use[:, 2])
+        self.dis_com = np.sort(self.dis_com)
+        self.dis_com_outer = np.mean(self.dis_com[-200:])
+
+        return 0
+
+    def v_rms(self, if_R_atmos=False, verbose=1):
+        """Calculate the root mean square velocity in m/s (mks unit). Normally useful when checking cooling snapshot."""
+        self.dis_to_com(if_R_atmos=if_R_atmos)
+        v_rms = np.sqrt(np.sum(self.vel**2) / len(self.m))
+        v_esc = np.sqrt(2 * Snap.G * np.sum(self.m) / self.dis_com_outer)
+        if verbose:
+            print("Root mean square velocity is : % .4f km/s" % (v_rms / 1e3))
+            print("Escape velocity is : % .4f km/s" % (v_esc / 1e3))
+            print("V_rms/V_esc = %.2f" % (v_rms / v_esc))
+        return 0
 
     def splot(
         self,
