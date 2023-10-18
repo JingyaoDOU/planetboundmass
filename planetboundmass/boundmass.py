@@ -877,7 +877,7 @@ class Snap:
         if verbose:
             print("Root mean square velocity is : % .4f km/s" % (v_rms / 1e3))
             print("Escape velocity is : % .4f km/s" % (v_esc / 1e3))
-            print("V_rms/V_esc = %.2f" % (v_rms / v_esc))
+            print("V_rms/V_esc = %.4f %%" % (100 * (v_rms / v_esc)))
         return 0
 
     def splot(
