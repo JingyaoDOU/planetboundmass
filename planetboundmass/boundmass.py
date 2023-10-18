@@ -829,6 +829,11 @@ class Snap:
         """recenter the position to new_center."""
         self.pos -= new_center
 
+    def v_rms(self):
+        """Calculate the root mean square velocity in m/s (mks unit). Normally useful when checking cooling snapshot."""
+
+        return np.sqrt(np.sum(self.vel**2) / len(self.m))
+
     def splot(
         self,
         aspect="xy",
