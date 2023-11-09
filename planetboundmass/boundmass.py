@@ -930,7 +930,7 @@ class Snap:
             )
         if sel_matid >= 0:
             sel_pos[
-                (self.matid != sel_matid) & (self.matid != (sel_matid + Bound.id_body))
+                (self.matid != sel_matid) | (self.matid != (sel_matid + Bound.id_body))
             ] = 0
             # colours = colours[sel_pos]
             # sizes = sizes[sel_pos]
