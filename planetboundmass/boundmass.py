@@ -884,17 +884,18 @@ class Snap:
         self,
         aspect="xy",
         extent=None,
-        output_fig=False,
+        ax=None,
         equal_axis=False,
         sel_pid=None,
         sel_matid=-1,
         selp_size=3,
         selp_color="cyan",
+        figsize=(16, 9),
     ):
         """_summary_
 
         Args:
-            xy (bool, optional): _description_. Defaults to True.
+            aspect (bool, optional): _description_. Defaults to True.
             extent (list, optional): [xmin,xmax,ymin,ymax,zmin,zmax] Defaults to None.
             output_fig (bool, optional): _description_. Defaults to False.
             equal_axis (bool, optional): _description_. Defaults to False.
@@ -904,8 +905,15 @@ class Snap:
             selp_color (str, optional): _description_. Defaults to "cyan".
 
         Returns:
-           plt.figurer:return particles plot
+           plt.axes:return particles plot
         """
+        if ax is None:
+            fig, ax = plt.subplots(figsize=figsize)
+            created_ax = True
+        else:
+            created_ax = False
+            fig = ax.figure
+
         colours = np.empty(len(self.pid), dtype=object)
         sizes = np.zeros(len(self.pid))
 
@@ -916,16 +924,16 @@ class Snap:
         sel_pos = np.ones_like(self.pid, dtype=bool)
 
         if sel_pid is not None:
-            colours[np.in1d(self.pid, sel_pid)] = selp_color
-            sizes[np.in1d(self.pid, sel_pid)] = (
+            colours[np.isin(self.pid, sel_pid)] = selp_color
+            sizes[np.isin(self.pid, sel_pid)] = (
                 selp_size * sizes[np.in1d(self.pid, sel_pid)]
             )
         if sel_matid >= 0:
-            sel_pos = (self.matid == sel_matid) | (
-                self.matid == (sel_matid + Bound.id_body)
-            )
-            colours = colours[sel_pos]
-            sizes = sizes[sel_pos]
+            sel_pos[
+                (self.matid == sel_matid) | (self.matid == (sel_matid + Bound.id_body))
+            ] = 1
+            # colours = colours[sel_pos]
+            # sizes = sizes[sel_pos]
 
         if extent is not None:
             extent = np.array(extent, dtype=float)
@@ -942,8 +950,8 @@ class Snap:
 
         plot_pos = self.pos[sel_pos]
         plot_colours = colours[sel_pos]
-        fig = plt.figure(figsize=(8, 8))
-        ax = fig.add_subplot(111)
+        # fig = plt.figure(figsize=(8, 8))
+        # ax = fig.add_subplot(111)
         if aspect == "xy":
             arg_sort_pos_z = np.argsort(plot_pos[:, 2])
             search_sort_z = np.searchsorted(
@@ -968,7 +976,7 @@ class Snap:
                 plot_pos[:, 0][plot_pos[:, 0] <= 0.1 * Bound.R_earth],
             )
             arg_x = arg_sort_pos_x[search_sort_x]
-            ax.scatter(
+            ax = ax.scatter(
                 plot_pos[arg_x, 1] / Bound.R_earth,
                 plot_pos[arg_x, 2] / Bound.R_earth,
                 s=sizes[arg_x],
@@ -983,7 +991,7 @@ class Snap:
                 plot_pos[:, 1][plot_pos[:, 1] <= 0.1 * Bound.R_earth],
             )
             arg_x = arg_sort_pos_x[search_sort_x]
-            ax.scatter(
+            ax = ax.scatter(
                 plot_pos[arg_x, 0] / Bound.R_earth,
                 plot_pos[arg_x, 2] / Bound.R_earth,
                 s=sizes[arg_x],
@@ -998,13 +1006,7 @@ class Snap:
         ax.set_facecolor("#111111")
         ax.tick_params(axis="both", which="major", labelsize=14)
 
-        if output_fig:
-            return fig, ax
-        else:
-            plt.show()
-            plt.cla()
-            plt.clf()
-            plt.close()
+        return ax
 
     def update_material_dictionary(self, update=False):
         type_factor = 100
