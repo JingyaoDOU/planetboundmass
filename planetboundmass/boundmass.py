@@ -929,12 +929,7 @@ class Snap:
                 selp_size * sizes[np.in1d(self.pid, sel_pid)]
             )
         if sel_matid >= 0:
-            sel_pos[
-                np.invert(
-                    (self.matid == sel_matid)
-                    | (self.matid == (sel_matid + Bound.id_body))
-                )
-            ] = 0
+            sel_pos[(self.matid != sel_matid)] = 0
             # colours = colours[sel_pos]
             # sizes = sizes[sel_pos]
 
