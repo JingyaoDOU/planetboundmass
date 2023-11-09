@@ -950,6 +950,7 @@ class Snap:
 
         plot_pos = self.pos[sel_pos]
         plot_colours = colours[sel_pos]
+        self.sel_pos = sel_pos
         # fig = plt.figure(figsize=(8, 8))
         # ax = fig.add_subplot(111)
         if aspect == "xy":
