@@ -976,7 +976,7 @@ class Snap:
                 plot_pos[:, 0][plot_pos[:, 0] <= 0.1 * Bound.R_earth],
             )
             arg_x = arg_sort_pos_x[search_sort_x]
-            ax = ax.scatter(
+            ax.scatter(
                 plot_pos[arg_x, 1] / Bound.R_earth,
                 plot_pos[arg_x, 2] / Bound.R_earth,
                 s=sizes[arg_x],
@@ -991,7 +991,7 @@ class Snap:
                 plot_pos[:, 1][plot_pos[:, 1] <= 0.1 * Bound.R_earth],
             )
             arg_x = arg_sort_pos_x[search_sort_x]
-            ax = ax.scatter(
+            ax.scatter(
                 plot_pos[arg_x, 0] / Bound.R_earth,
                 plot_pos[arg_x, 2] / Bound.R_earth,
                 s=sizes[arg_x],
