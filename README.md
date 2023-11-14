@@ -8,6 +8,7 @@ Install
 =======
 First, activate your conda environment and install it with `pip`
 ```Shell
+conda create -n env python=3.8.18
 conda activate env
 pip install git+https://github.com/JingyaoDOU/planetboundmass.git
 ```
