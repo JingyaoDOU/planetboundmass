@@ -14,7 +14,7 @@ setuptools.setup(
     url="https://github.com/JingyaoDOU/planetboundmass",
     license="MIT",
     packages=setuptools.find_packages(),
-    python_requires=">=3.8",
+    python_requires="==3.8.12",
     package_data={"planetboundmass": ["data/*.txt"]},
     install_requires=[
         "numpy",
