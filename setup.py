@@ -23,7 +23,7 @@ setuptools.setup(
         "h5py",
         "woma",
         "unyt",
-        "swiftsimio",
+        "swiftsimio<=6.1.1",
         "scipy",
         "seaborn",
     ],
