@@ -395,11 +395,11 @@ class Bound:
         iron_key_list = np.array([100, 300, 401, 402])
         core_id = np.intersect1d(iron_key_list, self.unique_matid)
         core_array_name = self.Di_id_mat[int(core_id)] + "_ratio"
-
+        self.gamma = (self.total_mass - self.m_tar) / self.m_tar
         d = {
             "M_tar": self.m_tar,
             "M_total": self.total_mass,
-            "gamma": (self.total_mass - self.m_tar) / self.m_tar,
+            "gamma": self.gamma,
             "npt": self.npt,
             "b": self.b,
             "v": self.v,
