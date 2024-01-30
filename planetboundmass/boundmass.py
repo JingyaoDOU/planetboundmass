@@ -183,9 +183,9 @@ class Bound:
                 sel_bound = ke + pe < 0.0
 
                 if (count == 0) and (np.sum(sel_bound) == 0):
-                    bound[
-                        bound == remnant_id
-                    ] = -1  # through the bad seeds with remnant id -1
+                    bound[bound == remnant_id] = (
+                        -1
+                    )  # through the bad seeds with remnant id -1
                     bad_seeds += 1
                     goback = True
                     # print("Bad starting")
@@ -981,7 +981,7 @@ class Snap:
                 plot_pos[arg_x, 1] / Bound.R_earth,
                 plot_pos[arg_x, 2] / Bound.R_earth,
                 s=sizes[arg_x],
-                c=colours[arg_x],
+                c=plot_colours[arg_x],
             )
             ax.set_xlabel(r"y Position ($R_\oplus$)", fontsize=16)
             ax.set_ylabel(r"z Position ($R_\oplus$)", fontsize=16)
