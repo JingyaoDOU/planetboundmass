@@ -558,8 +558,6 @@ class Bound:
         vel_bnd = self.vel[self.bound == 1]
         m_bnd = self.m[self.bound == 1]
         pid_bnd = self.pid[self.bound == 1]
-        if not hasattr(self, "entropy"):
-            self.calculate_entropy()
 
         pos_bnd_centerM = np.sum(pos_bnd * m_bnd[:, np.newaxis], axis=0) / np.sum(m_bnd)
         pos_bnd -= pos_bnd_centerM
