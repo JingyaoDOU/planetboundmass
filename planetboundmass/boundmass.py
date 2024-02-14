@@ -564,11 +564,12 @@ class Bound:
         ke_bnd = 0.5 * np.sum(m_bnd * np.sum(vel_bnd**2, axis=1))
         # Using a moving average calculation to find the planet-disk boundary (max particle KE)
         r_bnd_argsort = np.argsort(r_bnd)
-        Navg = Navg
+        Navg_par = Navg
         KEmax = 0
         rKEmax = 0
-        for i in range(len(r_bnd) - Navg):
-            KEavg = np.sum(ke_bnd[r_bnd_argsort[i : i + Navg]]) / Navg
+        for i in range(len(r_bnd) - Navg_par):
+            # calculate the average kinetic energy of the particles
+            KEavg = np.sum(ke_bnd[r_bnd_argsort[i : i + Navg]]) / NNavg_paravg
             if KEavg > KEmax:
                 KEmax = KEavg
                 rKEmax = r_bnd[r_bnd_argsort[i]]
