@@ -40,7 +40,8 @@ class Bound:
 
         self.filename_check()
         if not self.standard_filename:
-            print("not standard filename")
+            if verbose:
+                print("not standard filename")
             # if eosid_list is None:
             #     raise ValueError(
             #         "Non-standard filename, please provide an eos id dictionary"
