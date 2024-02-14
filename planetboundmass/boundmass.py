@@ -561,15 +561,15 @@ class Bound:
         # calcualte the radius of the particles
         r_bnd = np.sqrt(np.sum(pos_bnd**2, axis=1))
         # calculate the kenetic energy of the particles
-        ke_bnd = 0.5 * np.sum(m_bnd * np.sum(vel_bnd**2, axis=1))
+        ke_bnd = 0.5 * m_bnd * np.sum(vel_bnd**2, axis=1)
         # Using a moving average calculation to find the planet-disk boundary (max particle KE)
         r_bnd_argsort = np.argsort(r_bnd)
-        Navg_par = Navg
+        Navg = Navg
         KEmax = 0
         rKEmax = 0
-        for i in range(len(r_bnd) - Navg_par):
+        for i in range(len(r_bnd) - Navg):
             # calculate the average kinetic energy of the particles
-            KEavg = np.sum(ke_bnd[r_bnd_argsort[i : i + Navg]]) / NNavg_paravg
+            KEavg = np.sum(ke_bnd[r_bnd_argsort[i : i + Navg]]) / Navg
             if KEavg > KEmax:
                 KEmax = KEavg
                 rKEmax = r_bnd[r_bnd_argsort[i]]
@@ -581,8 +581,8 @@ class Bound:
         self.planet_pid = pid_bnd[planet_sel]
         self.disk_pid = pid_bnd[disk_sel]
 
-        self.planet_m = m_bnd[planet_sel]
-        self.disk_m = m_bnd[disk_sel]
+        self.planet_m = np.sum(m_bnd[planet_sel]) / Bound.M_earth  # in earth mass
+        self.disk_m = np.sum(m_bnd[disk_sel]) / Bound.M_earth  # in earth mass
 
         self.planet_vel = vel_bnd[planet_sel]
         self.disk_vel = vel_bnd[disk_sel]
