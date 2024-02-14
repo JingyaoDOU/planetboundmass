@@ -605,6 +605,55 @@ class Bound:
         # calculate the total angular momentum of the all the particles along the z axis
         self.total_Lz = np.sum(np.cross(self.pos, self.vel)[:, 2])
 
+    def calculate_disk_vapor_fraction(self, verbose=1):
+        """Calculate the vapour fraction of the disk particles
+
+        Args:
+            verbose (int, optional): _description_. Defaults to 1.
+        """
+        if not hasattr(self, "disk_pid"):
+            raise AttributeError("Need to run disk_planet_mass() first")
+
+        if not hasattr(self, "entropy"):
+            woma.load_eos_tables(["ANEOS_iron", "ANEOS_forsterite", "ANEOS_Fe85Si15"])
+            self.entropy = woma.eos.eos.A1_s_u_rho(self.u, self.rho_mks, self.matid)
+
+        if not hasattr(self, "disk_core_vapour_fraction"):
+            self.disk_core_vapour_fraction = np.zeros(self.num_rem)
+        if not hasattr(self, "disk_mantle_vapour_fraction"):
+            self.disk_mantle_vapour_fraction = np.zeros(self.num_rem)
+
+        core_id = np.intersect1d(self.iron_key_list, self.unique_matid)
+        core_arg = np.logical_and(
+            self.matid == core_id, np.isin(self.pid, self.disk_pid)
+        )
+
+        mantle_id = np.intersect1d(self.si_key_list, self.unique_matid)
+        mantle_arg = np.logical_and(
+            self.matid == mantle_id, np.isin(self.pid, self.disk_pid)
+        )
+
+        core_vf = VapourFrc(core_id, self.entropy[core_arg], self.p_mks[core_arg])
+        core_vapour_fraction = core_vf.vapour_fraction()
+
+        mantle_vf = VapourFrc(
+            mantle_id, self.entropy[mantle_arg], self.p_mks[mantle_arg]
+        )
+        mantle_vapour_fraction = mantle_vf.vapour_fraction()
+
+        self.disk_core_vapour_fraction[0] = np.sum(
+            self.m[core_arg] * core_vapour_fraction
+        ) / np.sum(self.m[core_arg])
+        self.disk_mantle_vapour_fraction[0] = np.sum(
+            self.m[mantle_arg] * mantle_vapour_fraction
+        ) / np.sum(self.m[mantle_arg])
+
+        self.disk_vapor_fraction = (
+            np.sum(self.m[core_arg] * core_vapour_fraction)
+            + np.sum(self.m[mantle_arg] * mantle_vapour_fraction)
+        ) / (np.sum(self.m[core_arg]) + np.sum(self.m[mantle_arg]))
+        print((np.sum(self.m[core_arg]) + np.sum(self.m[mantle_arg])) / Bound.M_earth)
+
     def basic_plot(
         self,
         mode=0,
