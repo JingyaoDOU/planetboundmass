@@ -428,6 +428,11 @@ class Bound:
             woma.load_eos_tables(["ANEOS_iron", "ANEOS_forsterite", "ANEOS_Fe85Si15"])
             self.entropy = woma.eos.eos.A1_s_u_rho(self.u, self.rho_mks, self.matid)
 
+    def calculate_T(self):
+        if not hasattr(self, "T"):
+            woma.load_eos_tables(["ANEOS_iron", "ANEOS_forsterite", "ANEOS_Fe85Si15"])
+            self.T = woma.eos.eos.A1_T_u_rho(self.u, self.rho_mks, self.matid)
+
     def total_vap_fraction(self, verbose=1):
         """
         Calculates the total vapour fraction of core and mantle materials.
@@ -553,6 +558,8 @@ class Bound:
         vel_bnd = self.vel[self.bound == 1]
         m_bnd = self.m[self.bound == 1]
         pid_bnd = self.pid[self.bound == 1]
+        if not hasattr(self, "entropy"):
+            self.calculate_entropy()
 
         pos_bnd_centerM = np.sum(pos_bnd * m_bnd[:, np.newaxis], axis=0) / np.sum(m_bnd)
         pos_bnd -= pos_bnd_centerM
@@ -574,25 +581,27 @@ class Bound:
                 KEmax = KEavg
                 rKEmax = r_bnd[r_bnd_argsort[i]]
         # particles with r <= rKEmax are planet particles
-        planet_sel = r_bnd <= rKEmax
+        self.planet_sel = r_bnd <= rKEmax
         # particles with r > rKEmax are disk particles
-        disk_sel = r_bnd > rKEmax
+        self.disk_sel = r_bnd > rKEmax
 
-        self.planet_pid = pid_bnd[planet_sel]
-        self.disk_pid = pid_bnd[disk_sel]
+        self.planet_pid = pid_bnd[self.planet_sel]
+        self.disk_pid = pid_bnd[self.disk_sel]
 
-        self.planet_m = np.sum(m_bnd[planet_sel]) / Bound.M_earth  # in earth mass
-        self.disk_m = np.sum(m_bnd[disk_sel]) / Bound.M_earth  # in earth mass
+        self.planet_m = np.sum(m_bnd[self.planet_sel]) / Bound.M_earth  # in earth mass
+        self.disk_m = np.sum(m_bnd[self.disk_sel]) / Bound.M_earth  # in earth mass
 
-        self.planet_vel = vel_bnd[planet_sel]
-        self.disk_vel = vel_bnd[disk_sel]
+        self.planet_vel = vel_bnd[self.planet_sel]
+        self.disk_vel = vel_bnd[self.disk_sel]
 
         # calculate the angular momentum of the planet particles along the z axis
         self.planet_Lz = np.sum(
-            np.cross(pos_bnd[planet_sel], vel_bnd[planet_sel])[:, 2]
+            np.cross(pos_bnd[self.planet_sel], vel_bnd[self.planet_sel])[:, 2]
         )
         # calculate the angular momentum of the disk particles along the z axis
-        self.disk_Lz = np.sum(np.cross(pos_bnd[disk_sel], vel_bnd[disk_sel])[:, 2])
+        self.disk_Lz = np.sum(
+            np.cross(pos_bnd[self.disk_sel], vel_bnd[self.disk_sel])[:, 2]
+        )
         # calculate the total angular momentum of the all the bound particles along the z axis
         self.total_bnd_Lz = np.sum(np.cross(pos_bnd, vel_bnd)[:, 2])
         # calculate the total angular momentum of the all the particles along the z axis
