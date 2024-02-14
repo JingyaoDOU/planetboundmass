@@ -538,6 +538,65 @@ class Bound:
                 )
             )
 
+    def disk_planet_mass(self, Navg=200, verbose=1):
+        """seperate the largest bound remnant to disk and planet particles
+
+        Args:
+            Navg (int): number of particles to average over
+            verbose (int, optional): _description_. Defaults to 1.
+        """
+        # Need first run find_bound() to get the bound particles
+        if not hasattr(self, "bound"):
+            raise AttributeError("Need to run find_bound() first")
+        # recenter the position and velocity to the cm,cvel of the largest remnant
+        pos_bnd = self.pos[self.bound == 1]
+        vel_bnd = self.vel[self.bound == 1]
+        m_bnd = self.m[self.bound == 1]
+        pid_bnd = self.pid[self.bound == 1]
+
+        pos_bnd_centerM = np.sum(pos_bnd * m_bnd[:, np.newaxis], axis=0) / np.sum(m_bnd)
+        pos_bnd -= pos_bnd_centerM
+        vel_bnd_centerM = np.sum(vel_bnd * m_bnd[:, np.newaxis], axis=0) / np.sum(m_bnd)
+        vel_bnd -= vel_bnd_centerM
+        # calcualte the radius of the particles
+        r_bnd = np.sqrt(np.sum(pos_bnd**2, axis=1))
+        # calculate the kenetic energy of the particles
+        ke_bnd = 0.5 * np.sum(m_bnd * np.sum(vel_bnd**2, axis=1))
+        # Using a moving average calculation to find the planet-disk boundary (max particle KE)
+        r_bnd_argsort = np.argsort(r_bnd)
+        Navg = Navg
+        KEmax = 0
+        rKEmax = 0
+        for i in range(len(r_bnd) - Navg):
+            KEavg = np.sum(ke_bnd[r_bnd_argsort[i : i + Navg]]) / Navg
+            if KEavg > KEmax:
+                KEmax = KEavg
+                rKEmax = r_bnd[r_bnd_argsort[i]]
+        # particles with r <= rKEmax are planet particles
+        planet_sel = r_bnd <= rKEmax
+        # particles with r > rKEmax are disk particles
+        disk_sel = r_bnd > rKEmax
+
+        self.planet_pid = pid_bnd[planet_sel]
+        self.disk_pid = pid_bnd[disk_sel]
+
+        self.planet_m = m_bnd[planet_sel]
+        self.disk_m = m_bnd[disk_sel]
+
+        self.planet_vel = vel_bnd[planet_sel]
+        self.disk_vel = vel_bnd[disk_sel]
+
+        # calculate the angular momentum of the planet particles along the z axis
+        self.planet_Lz = np.sum(
+            np.cross(pos_bnd[planet_sel], vel_bnd[planet_sel])[:, 2]
+        )
+        # calculate the angular momentum of the disk particles along the z axis
+        self.disk_Lz = np.sum(np.cross(pos_bnd[disk_sel], vel_bnd[disk_sel])[:, 2])
+        # calculate the total angular momentum of the all the bound particles along the z axis
+        self.total_bnd_Lz = np.sum(np.cross(pos_bnd, vel_bnd)[:, 2])
+        # calculate the total angular momentum of the all the particles along the z axis
+        self.total_Lz = np.sum(np.cross(self.pos, self.vel)[:, 2])
+
     def basic_plot(
         self,
         mode=0,
