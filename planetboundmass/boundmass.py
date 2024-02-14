@@ -652,7 +652,6 @@ class Bound:
             np.sum(self.m[core_arg] * core_vapour_fraction)
             + np.sum(self.m[mantle_arg] * mantle_vapour_fraction)
         ) / (np.sum(self.m[core_arg]) + np.sum(self.m[mantle_arg]))
-        print((np.sum(self.m[core_arg]) + np.sum(self.m[mantle_arg])) / Bound.M_earth)
 
     def basic_plot(
         self,
