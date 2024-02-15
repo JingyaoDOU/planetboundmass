@@ -607,8 +607,8 @@ class Bound:
         # calculate the total angular momentum of the all the particles along the z axis
         self.total_Lz = np.sum(np.cross(self.pos, self.vel)[:, 2])
 
-        self.disk_rho = rho_bnd[self.disk_sel]
-        self.planet_rho = rho_bnd[self.planet_sel]
+        self.disk_rho_mks = rho_bnd[self.disk_sel]
+        self.planet_rho_mks = rho_bnd[self.planet_sel]
 
     def calculate_disk_vapor_fraction(self, verbose=1):
         """Calculate the vapour fraction of the disk particles
