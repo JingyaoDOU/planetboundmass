@@ -1007,7 +1007,7 @@ class Snap:
         aspect="xy",
         extent=None,
         ax=None,
-        equal_axis=False,
+        equal_axis=True,
         sel_pid=None,
         sel_matid=-1,
         selp_size=3,
@@ -1020,7 +1020,7 @@ class Snap:
             aspect (bool, optional): _description_. Defaults to True.
             extent (list, optional): [xmin,xmax,ymin,ymax,zmin,zmax] Defaults to None.
             output_fig (bool, optional): _description_. Defaults to False.
-            equal_axis (bool, optional): _description_. Defaults to False.
+            equal_axis (bool, optional): _description_. Defaults to True.
             sel_pid (_type_, optional): _description_. Defaults to None.
             sel_matid (int, optional): _description_. Defaults to -1.
             selp_size (int, optional): _description_. Defaults to 3.
