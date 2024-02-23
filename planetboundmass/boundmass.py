@@ -909,6 +909,8 @@ class Snap:
     def load_data(self):
         # load all the data from snapshot
         data = sw.load(self.filename)
+
+        self.snaptime = data.metadata.time.value
         self.boxsize = data.metadata.boxsize[0]
         box_mid = 0.5 * self.boxsize.to(unyt.m)
         data.gas.coordinates.convert_to_mks()
