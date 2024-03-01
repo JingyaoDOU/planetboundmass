@@ -1232,7 +1232,7 @@ class Snap:
 
         return
 
-    def define_scatter_colour(
+    def set_scatter_colour(
         self,
         colour_iron_tar="tomato",
         colour_si_tar="mediumseagreen",
@@ -1252,14 +1252,16 @@ class Snap:
         self.colour_si_imp = colour_si_imp
         self.colour_water_imp = colour_water_imp
         self.colour_atmos_imp = colour_atmos_imp
+        self.update_material_dictionary(update=True)
 
-    def define_scatter_size(
+    def set_scatter_size(
         self, size_iron=0.1, size_si=0.1, size_water=0.1, size_atmos=0.1
     ):
         self.size_iron = size_iron
         self.size_si = size_si
         self.size_water = size_water
         self.size_atmos = size_atmos
+        self.update_material_dictionary(update=True)
 
 
 def main():
