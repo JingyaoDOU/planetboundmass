@@ -1203,27 +1203,34 @@ class Snap:
             if key in self.atmos_key_list:
                 if key < Bound.id_body:
                     Di_id_colour[key] = self.colour_atmos_tar
+                    Di_id_size[key] = self.size_atmos_tar
                 else:
                     Di_id_colour[key] = self.colour_atmos_imp
-                Di_id_size[key] = self.size_atmos
+                    Di_id_size[key] = self.size_atmos_imp
+
             elif key in self.water_key_list:
                 if key < Bound.id_body:
                     Di_id_colour[key] = self.colour_water_tar
+                    Di_id_size[key] = self.size_water_tar
                 else:
                     Di_id_colour[key] = self.colour_water_imp
-                Di_id_size[key] = self.size_water
+                    Di_id_size[key] = self.size_water_imp
+
             elif key in self.iron_key_list:
                 if key < Bound.id_body:
                     Di_id_colour[key] = self.colour_iron_tar
+                    Di_id_size[key] = self.size_iron_tar
                 else:
                     Di_id_colour[key] = self.colour_iron_imp
-                Di_id_size[key] = self.size_iron
+                    Di_id_size[key] = self.size_iron_imp
+
             elif key in self.si_key_list:
                 if key < Bound.id_body:
                     Di_id_colour[key] = self.colour_si_tar
+                    Di_id_size[key] = self.size_si_tar
                 else:
                     Di_id_colour[key] = self.colour_si_imp
-                Di_id_size[key] = self.size_si
+                    Di_id_size[key] = self.size_si_imp
 
         self.Di_id_colour = Di_id_colour
         self.Di_id_size = Di_id_size
@@ -1255,10 +1262,16 @@ class Snap:
     def set_scatter_size(
         self, size_iron=0.1, size_si=0.1, size_water=0.1, size_atmos=0.1
     ):
-        self.size_iron = size_iron
-        self.size_si = size_si
-        self.size_water = size_water
-        self.size_atmos = size_atmos
+        self.size_iron_tar = size_iron
+        self.size_si_tar = size_si
+        self.size_water_tar = size_water
+        self.size_atmos_tar = size_atmos
+
+        self.size_iron_imp = size_iron
+        self.size_si_imp = size_si
+        self.size_water_imp = size_water
+        self.size_atmos_imp = size_atmos
+
         self.update_material_dictionary()
 
     def init_scatter_colour(
@@ -1292,10 +1305,15 @@ class Snap:
         Initialise the scatter plot size for different materials.
 
         """
-        self.size_iron = size_iron
-        self.size_si = size_si
-        self.size_water = size_water
-        self.size_atmos = size_atmos
+        self.size_iron_tar = size_iron
+        self.size_si_tar = size_si
+        self.size_water_tar = size_water
+        self.size_atmos_tar = size_atmos
+
+        self.size_iron_imp = size_iron
+        self.size_si_imp = size_si
+        self.size_water_imp = size_water
+        self.size_atmos_imp = size_atmos
 
 
 def main():
