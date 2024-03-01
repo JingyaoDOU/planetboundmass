@@ -1074,6 +1074,7 @@ class Snap:
 
         plot_pos = self.pos[sel_pos]
         plot_colours = colours[sel_pos]
+        plot_sizes = sizes[sel_pos]
         self.sel_pos = sel_pos
         # fig = plt.figure(figsize=(8, 8))
         # ax = fig.add_subplot(111)
@@ -1087,7 +1088,7 @@ class Snap:
             ax.scatter(
                 plot_pos[arg_z, 0] / Bound.R_earth,
                 plot_pos[arg_z, 1] / Bound.R_earth,
-                s=sizes[arg_z],
+                s=plot_sizes[arg_z],
                 c=plot_colours[arg_z],
             )
 
@@ -1104,7 +1105,7 @@ class Snap:
             ax.scatter(
                 plot_pos[arg_x, 1] / Bound.R_earth,
                 plot_pos[arg_x, 2] / Bound.R_earth,
-                s=sizes[arg_x],
+                s=plot_sizes[arg_x],
                 c=plot_colours[arg_x],
             )
             ax.set_xlabel(r"y Position ($R_\oplus$)", fontsize=16)
@@ -1119,7 +1120,7 @@ class Snap:
             ax.scatter(
                 plot_pos[arg_x, 0] / Bound.R_earth,
                 plot_pos[arg_x, 2] / Bound.R_earth,
-                s=sizes[arg_x],
+                s=plot_sizes[arg_x],
                 c=plot_colours[arg_x],
             )
             ax.set_xlabel(r"x Position ($R_\oplus$)", fontsize=16)
