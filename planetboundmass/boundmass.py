@@ -1195,8 +1195,8 @@ class Snap:
         self.si_key_list = np.concatenate((si_key_list, si_key_list + Bound.id_body))
 
         if not update:
-            self.define_scatter_colour()
-            self.define_scatter_size()
+            self.set_scatter_colour()
+            self.set_scatter_size()
 
         Di_id_colour = {}
         Di_id_size = {}
