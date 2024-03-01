@@ -904,8 +904,8 @@ class Snap:
         self.filename = filename
         self.npt = npt
         self.load_data()
-        self.set_scatter_colour()
-        self.set_scatter_size()
+        self.init_scatter_colour()
+        self.init_scatter_size()
         self.update_material_dictionary()
 
     def load_data(self):
@@ -1230,7 +1230,6 @@ class Snap:
 
         return
 
-    @value.setter
     def set_scatter_colour(
         self,
         colour_iron_tar="tomato",
@@ -1251,11 +1250,48 @@ class Snap:
         self.colour_si_imp = colour_si_imp
         self.colour_water_imp = colour_water_imp
         self.colour_atmos_imp = colour_atmos_imp
+        self.update_material_dictionary()
 
-    @value.setter
     def set_scatter_size(
         self, size_iron=0.1, size_si=0.1, size_water=0.1, size_atmos=0.1
     ):
+        self.size_iron = size_iron
+        self.size_si = size_si
+        self.size_water = size_water
+        self.size_atmos = size_atmos
+        self.update_material_dictionary()
+
+    def init_scatter_colour(
+        self,
+        colour_iron_tar="tomato",
+        colour_si_tar="mediumseagreen",
+        colour_water_tar="skyblue",
+        colour_atmos_tar="aliceblue",
+        colour_iron_imp="sandybrown",
+        colour_si_imp="pink",
+        colour_water_imp="skyblue",
+        colour_atmos_imp="aliceblue",
+    ):
+        """
+        Initialise the scatter plot colour for different materials.
+        """
+        self.colour_iron_tar = colour_iron_tar
+        self.colour_si_tar = colour_si_tar
+        self.colour_water_tar = colour_water_tar
+        self.colour_atmos_tar = colour_atmos_tar
+
+        self.colour_iron_imp = colour_iron_imp
+        self.colour_si_imp = colour_si_imp
+        self.colour_water_imp = colour_water_imp
+        self.colour_atmos_imp = colour_atmos_imp
+
+    def init_scatter_size(
+        self, size_iron=0.1, size_si=0.1, size_water=0.1, size_atmos=0.1
+    ):
+        """
+        Initialise the scatter plot size for different materials.
+
+        """
         self.size_iron = size_iron
         self.size_si = size_si
         self.size_water = size_water
