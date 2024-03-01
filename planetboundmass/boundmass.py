@@ -904,6 +904,8 @@ class Snap:
         self.filename = filename
         self.npt = npt
         self.load_data()
+        self.set_scatter_colour()
+        self.set_scatter_size()
         self.update_material_dictionary()
 
     def load_data(self):
@@ -1131,7 +1133,7 @@ class Snap:
 
         return ax
 
-    def update_material_dictionary(self, update=False):
+    def update_material_dictionary(self):
         type_factor = 100
         Di_mat_type = {
             "idg": 0,
@@ -1194,10 +1196,6 @@ class Snap:
         si_key_list = np.array([101, 103, 202, 301, 400])
         self.si_key_list = np.concatenate((si_key_list, si_key_list + Bound.id_body))
 
-        if not update:
-            self.set_scatter_colour()
-            self.set_scatter_size()
-
         Di_id_colour = {}
         Di_id_size = {}
 
@@ -1232,6 +1230,7 @@ class Snap:
 
         return
 
+    @value.setter
     def set_scatter_colour(
         self,
         colour_iron_tar="tomato",
@@ -1252,8 +1251,8 @@ class Snap:
         self.colour_si_imp = colour_si_imp
         self.colour_water_imp = colour_water_imp
         self.colour_atmos_imp = colour_atmos_imp
-        self.update_material_dictionary(update=True)
 
+    @value.setter
     def set_scatter_size(
         self, size_iron=0.1, size_si=0.1, size_water=0.1, size_atmos=0.1
     ):
@@ -1261,7 +1260,6 @@ class Snap:
         self.size_si = size_si
         self.size_water = size_water
         self.size_atmos = size_atmos
-        self.update_material_dictionary(update=True)
 
 
 def main():
