@@ -284,18 +284,18 @@ class PhaseFinder:
                     entropy > self.critical_S,
                 )
             ] = 6
-            
+
         elif mat_id == 401:
             critical_P = 0.658993
             critical_S = 3.78634
-            
+
             self.phase[
                 np.logical_and(
                     pressure > self.critical_P,
                     entropy > self.critical_S,
                 )
             ] = 6
-            
+
         else:
             raise ValueError(
                 "Currently only have iron and forsterite vapour curve loaded"
@@ -303,21 +303,22 @@ class PhaseFinder:
 
         self.meltCurve, self.vaporCurve = load_melt_vapor_curve(mat_id)
 
-    def phase_finder(self):
-        # deal with material with pressure higher than critical point but not supercritical
-        
-        meltC_liquid_side_entropy = np.interp(
-            self.pressure[(self.pressure>self.critical_P)&(self.entropy<self.critical_S)],
-            self.vaporCurve["P_vapor_curve_liquid"],
-            self.vaporCurve["S_vapor_curve_liquid"],
-        )
-        meltC_vapour_side_entropy = np.interp(
-            self.pressure[],
-            self.vaporCurve["P_vapor_curve_gas"],
-            self.vaporCurve["S_vapor_curve_gas"],
-        )
+    # def phase_finder(self):
+    #     # deal with material with pressure higher than critical point but not supercritical
 
-        if self.en
+    #     meltC_liquid_side_entropy = np.interp(
+    #         self.pressure[(self.pressure>self.critical_P)&(self.entropy<self.critical_S)],
+    #         self.vaporCurve["P_vapor_curve_liquid"],
+    #         self.vaporCurve["S_vapor_curve_liquid"],
+    #     )
+    #     meltC_vapour_side_entropy = np.interp(
+    #         self.pressure[],
+    #         self.vaporCurve["P_vapor_curve_gas"],
+    #         self.vaporCurve["S_vapor_curve_gas"],
+    #     )
+
+    #     if self.en
+
 
 def main():
     import matplotlib.pyplot as plt
