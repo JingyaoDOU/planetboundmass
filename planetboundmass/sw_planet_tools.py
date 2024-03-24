@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 import swiftsimio as sw
 import unyt
 import os
@@ -142,26 +143,29 @@ def edacm(
     )
 
 
-def load_PSvc_data(mat_id):
+def load_melt_vapor_curve(mat_id):
     this_dir, _ = os.path.split(__file__)
     if mat_id == 400:
-        dataloc = os.path.join(this_dir, "data/s19_forsterite_vc.txt")
+        dataloc_meltCurve = os.path.join(this_dir, "data/s19_forsterite_meltCurve.csv")
+        dataloc_vapourCurve = os.path.join(
+            this_dir, "data/s19_forsterite_vaporCurve.csv"
+        )
     elif mat_id == 401:
-        dataloc = os.path.join(this_dir, "data/s20_iron_vc.txt")
+        dataloc_meltCurve = os.path.join(this_dir, "data/s20_iron_meltCurve.csv")
+        dataloc_vapourCurve = os.path.join(this_dir, "data/s20_iron_vaporCurve.csv")
     elif mat_id == 402:
-        dataloc = os.path.join(this_dir, "data/s20_alloy_vc.txt")
+        dataloc_meltCurve = os.path.join(this_dir, "data/s20_alloy_meltCurve.csv")
+        dataloc_vapourCurve = os.path.join(this_dir, "data/s20_alloy_vaporCurve.csv")
     else:
         raise ValueError(
             "Currently only have SESAME iron (401), SESAME alloy (402) and SESAME forsterite (400) vapour curve data"
         )
-    data_PVsl = np.loadtxt(dataloc)
+    data_meltCurve = pd.read_csv(dataloc_meltCurve, index_col=False)
+    data_vaporCurve = pd.read_csv(dataloc_vapourCurve, index_col=False)
 
-    return data_PVsl
+    return data_meltCurve, data_vaporCurve
 
 
-# Fors_PVsl  = load_PSvc_data(mat_id=400)
-# Iron_PVsl  = load_PSvc_data(mat_id=401)
-# Alloy_PVsl = load_PSvc_data(mat_id=402)
 class VapourFrc:
     iron_critical_P = 0.658993  # iron critical point Pressue in Gpa
     forsterite_critical_P = 0.159304  # forsterite critical point Pressue in Gpa
@@ -208,7 +212,7 @@ class VapourFrc:
             raise ValueError(
                 "Currently only have iron and forsterite vapour curve loaded"
             )
-        self.PVsl = load_PSvc_data(mat_id)
+        self.meltCurve, self.vaporCurve = load_melt_vapor_curve(mat_id)
 
     def lever(self, left_point, right_point, s):
         """given the liquid side vapor curve entropy and the vapour side vapor curve entropy,
@@ -224,10 +228,14 @@ class VapourFrc:
 
     def vapour_fraction(self):
         liquid_side_entropy = np.interp(
-            self.pressure, np.flip(self.PVsl[0]), np.flip(self.PVsl[2])
+            self.pressure,
+            self.vaporCurve["P_vapor_curve_liquid"],
+            self.vaporCurve["S_vapor_curve_liquid"],
         )
         vapour_side_entropy = np.interp(
-            self.pressure, np.flip(self.PVsl[1]), np.flip(self.PVsl[3])
+            self.pressure,
+            self.vaporCurve["P_vapor_curve_gas"],
+            self.vaporCurve["S_vapor_curve_gas"],
         )
 
         vapour_frac = self.lever(
@@ -240,8 +248,96 @@ class VapourFrc:
         return self.super_sel
 
 
+class PhaseFinder:
+    """Find the phase of the material based on the entropy and pressure
+    phase 1: solid
+    phase 2: liquid+solid
+    phase 3: liquid
+    phase 4: liquid+vapour
+    phase 5: vapour
+    phase 6: supercritical
+
+    Phase number is stored as an integer array.
+    """
+
+    iron_critical_P = 0.658993  # iron critical point Pressue in Gpa
+    forsterite_critical_P = 0.159304  # forsterite critical point Pressue in Gpa
+
+    iron_critical_S = 3.78634  # iron critical point
+    forsterite_critical_S = 6.37921  # forsterite critical point entropy in KJ/kg/K
+
+    def __init__(self, mat_id, entropy, pressure):
+        if mat_id not in [400, 401, 402]:
+            raise ValueError(
+                "Currently only have iron and forsterite vapour curve loaded"
+            )
+        self.mat_id = mat_id
+        self.entropy *= 1e-3  # switch to kJ/kg/K
+        self.pressure *= 1e-9  # switch to Gpa
+        self.phase = np.zeros(len(entropy))
+        if mat_id == 400:
+            self.critical_P = 0.159304
+            self.critical_S = 6.37921
+            self.phase[
+                np.logical_and(
+                    pressure > self.critical_P,
+                    entropy > self.critical_S,
+                )
+            ] = 6
+            
+        elif mat_id == 401:
+            critical_P = 0.658993
+            critical_S = 3.78634
+            
+            self.phase[
+                np.logical_and(
+                    pressure > self.critical_P,
+                    entropy > self.critical_S,
+                )
+            ] = 6
+            
+        else:
+            raise ValueError(
+                "Currently only have iron and forsterite vapour curve loaded"
+            )
+
+        self.meltCurve, self.vaporCurve = load_melt_vapor_curve(mat_id)
+
+    def phase_finder(self):
+        # deal with material with pressure higher than critical point but not supercritical
+        
+        meltC_liquid_side_entropy = np.interp(
+            self.pressure[(self.pressure>self.critical_P)&(self.entropy<self.critical_S)],
+            self.vaporCurve["P_vapor_curve_liquid"],
+            self.vaporCurve["S_vapor_curve_liquid"],
+        )
+        meltC_vapour_side_entropy = np.interp(
+            self.pressure[],
+            self.vaporCurve["P_vapor_curve_gas"],
+            self.vaporCurve["S_vapor_curve_gas"],
+        )
+
+        if self.en
+
 def main():
-    pass
+    import matplotlib.pyplot as plt
+    from scipy.interpolate import interp1d
+
+    PVsl = load_PSvc_data(mat_id=401)
+
+    interp_func = interp1d(
+        np.flip(PVsl[2]), np.flip(PVsl[0]), kind="linear", fill_value="extrapolate"
+    )
+    s_array = np.linspace(np.min(PVsl[2]), np.max(PVsl[2]), 100)
+    p_array = interp_func(s_array)
+
+    fig, ax = plt.subplots(1, 1, figsize=(6, 6))
+    ax.plot(1e3 * s_array, np.log10(p_array), c="b")
+    ax.scatter(1e3 * PVsl[2], np.log10(PVsl[0]), c="r", s=1)
+    ax.scatter(1e3 * PVsl[2][0], np.log10(PVsl[0][0]), c="lime", s=20)
+
+    plt.show()
+    # pass
 
 
 if __name__ == "__main__":
