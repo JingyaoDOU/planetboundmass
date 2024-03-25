@@ -49,6 +49,15 @@ from pathlib import Path
 from eostable import extEOStable
 import colormaps as local_cmaps
 
+R_earth = 6.371e6  # m
+M_earth = 5.97240e24  # kg
+M_Eatmo = 5.15e18  # kg
+mars_mass = 0.107 * M_earth
+G = 6.67408e-11  # m^3 kg^-1 s^-2
+G_cgs = 6.67408e-8  # in cgs
+M_mercury = 3.3010e23  # kg
+R_mercury = 2.4383e6  # m
+
 
 def plot_spherical_profiles(
     planet=None,
