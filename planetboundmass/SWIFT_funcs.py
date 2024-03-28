@@ -153,16 +153,14 @@ def plot_spherical_profiles(
 
     plt.tight_layout()
     plt.subplots_adjust(wspace=0.35)
-    fig.savefig(
-        "/user/home/qb20321/hammer/paper2_image/profile_m1d0.png",
-        dpi=600,
-        format="png",
-        transparent=True,
-        bbox_inches="tight",
-    )
-    # plt.show()
-
-    outtime = 500
+    # fig.savefig(
+    #     "/user/home/qb20321/hammer/paper2_image/profile_m1d0.png",
+    #     dpi=600,
+    #     format="png",
+    #     transparent=True,
+    #     bbox_inches="tight",
+    # )
+    plt.show()
 
 
 txtsize = 15
