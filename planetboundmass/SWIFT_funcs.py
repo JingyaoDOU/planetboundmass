@@ -159,7 +159,7 @@ def plot_spherical_profiles(
     #     format="png",
     #     transparent=True,
     #     bbox_inches="tight",
-    # )
+    # )s
     plt.show()
 
 
@@ -727,7 +727,7 @@ def print_impact_info(loc_tar, loc_imp, Xves=1.0, verbose=1):
     M_i = np.sum(m_imp)
     R_t = R_tar
     R_i = R_imp
-    gammma = M_i / M_t
+    gamma = M_i / M_t
     # Mutual escape speed
     v_esc = np.sqrt(2 * G * (M_t + M_i) / (R_t + R_i))
     times = Xves
@@ -741,7 +741,7 @@ def print_impact_info(loc_tar, loc_imp, Xves=1.0, verbose=1):
             "Impactor mass = %.5f, number of partiles %d, Radius=%.5f"
             % (M_i / M_earth, len(pos_imp), R_imp / R_earth)
         )
-        print("Mass ratio    = %.4f" % (gammma))
+        print("Mass ratio    = %.4f" % (gamma))
         print("Mutual escape velocity = %f m/s" % v_esc)
         print("%.3f times the mutual escape velocity = %f m/s" % (times, v_esc * times))
 
