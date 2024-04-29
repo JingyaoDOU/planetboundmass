@@ -658,6 +658,58 @@ class Bound:
             + np.sum(self.m[mantle_arg] * mantle_vapour_fraction)
         ) / (np.sum(self.m[core_arg]) + np.sum(self.m[mantle_arg]))
 
+    def rotate_along_z(self, rot_bound=True, percentile=5, verbose=1):
+        """Rotate coordinate of particles along the z axis.
+        Roration angle is calcualte base on percentile% and percentile% of x and y coordinate
+        rot_bound: If false, rotate based on the particles coordinate of around all particles
+                   if 1, then base on the largest remnant particles
+                   if 2, then base on all the bound remnant particles
+        percentile:how many particles to select to calculate the rotation angle
+        """
+
+        if rot_bound == 1:
+            rem_pos = self.pos[self.bound == 1]
+            x_p_low = np.percentile(np.sort(rem_pos[:, 0]), percentile)
+            x_p_high = np.percentile(np.sort(rem_pos[:, 0]), 100 - percentile)
+
+            y_p_low = np.percentile(np.sort(rem_pos[:, 1]), percentile)
+            y_p_high = np.percentile(np.sort(rem_pos[:, 1]), 100 - percentile)
+
+        elif rot_bound == 2:
+            rem_pos = self.pos[self.bound > 0]
+            x_p_low = np.percentile(np.sort(rem_pos[:, 0]), percentile)
+            x_p_high = np.percentile(np.sort(rem_pos[:, 0]), 100 - percentile)
+
+            y_p_low = np.percentile(np.sort(rem_pos[:, 1]), percentile)
+            y_p_high = np.percentile(np.sort(rem_pos[:, 1]), 100 - percentile)
+
+        elif rot_bound == 0:
+            x_p_low = np.percentile(np.sort(self.pos[:, 0]), percentile)
+            x_p_high = np.percentile(np.sort(self.pos[:, 0]), 100 - percentile)
+
+            y_p_low = np.percentile(np.sort(self.pos[:, 1]), percentile)
+            y_p_high = np.percentile(np.sort(self.pos[:, 1]), 100 - percentile)
+        else:
+            raise ValueError("rot_bound should be 0,1,2")
+
+        y_dis = abs(y_p_low - y_p_high)
+        x_dis = abs(x_p_low - x_p_high)
+
+        radians = np.arctan(x_dis / y_dis)
+        if verbose:
+            print("radians : %.4f" % radians)
+            print("Degree : %.4f" % np.rad2deg(radians))
+
+        rotation_matrix = np.array(
+            [
+                [np.cos(radians), -np.sin(radians), 0],
+                [np.sin(radians), np.cos(radians), 0],
+                [0, 0, 1],
+            ]
+        )
+
+        self.pos = np.dot(self.pos, rotation_matrix)
+
     def basic_plot(
         self,
         mode=0,
