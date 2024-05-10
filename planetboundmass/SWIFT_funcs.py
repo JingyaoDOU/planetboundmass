@@ -40,7 +40,8 @@ import matplotlib.colors as mcolors
 import matplotlib.ticker as mticker
 import colorcet as cc
 from planetboundmass import Bound, Snap
-import cmcrameri.cm as cmc
+
+# import cmcrameri.cm as cmc
 from matplotlib.pyplot import get_cmap
 from matplotlib.ticker import MultipleLocator, AutoMinorLocator
 from slurmpy import Slurm
