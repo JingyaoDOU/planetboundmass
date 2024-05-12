@@ -74,7 +74,7 @@ class Bound:
             self.m_tar = float(variable_list[2].replace("d", "."))
             self.npt = int(variable_list[3][3:])
             self.total_mass = float(variable_list[4].replace("d", "."))
-            self.v = float(variable_list[5][1:].replace("d", ".")[:-3])
+            self.v = float(variable_list[5][1:].split("k")[0].replace("d", "."))
             self.b = float(variable_list[6].replace("d", ".")[1:])
             self.hit_direction = variable_list[7]
             self.attri = ("_".join(variable_list[8:])).split(".")[0]
