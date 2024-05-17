@@ -442,6 +442,8 @@ class Bound:
             woma.load_eos_tables(["ANEOS_iron", "ANEOS_forsterite", "ANEOS_Fe85Si15"])
             self.entropy = woma.eos.eos.A1_s_u_rho(self.u, self.rho_mks, self.matid)
 
+        self.particle_vapour_fraction = np.zeros(len(self.pid))
+
         core_id = np.intersect1d(self.iron_key_list, self.unique_matid)
         core_arg = self.matid == core_id
         mantle_id = np.intersect1d(self.si_key_list, self.unique_matid)
@@ -473,6 +475,9 @@ class Bound:
         self.core_super_critical = np.sum(self.m[core_arg][sel_super_core]) / np.sum(
             self.m[core_arg]
         )
+
+        self.particle_vapour_fraction[core_arg] = core_vapour_fraction
+        self.particle_vapour_fraction[mantle_arg] = mantle_vapour_fraction
 
         if verbose:
             print(

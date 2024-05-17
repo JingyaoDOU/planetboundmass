@@ -212,6 +212,9 @@ class VapourFrc:
             raise ValueError(
                 "Currently only have iron and forsterite vapour curve loaded"
             )
+        self.vapour_frac[self.super_sel] = (
+            2  # set supercritical vapour fraction factor to 2
+        )
         self.meltCurve, self.vaporCurve = load_melt_vapor_curve(mat_id)
 
     def lever(self, left_point, right_point, s):
