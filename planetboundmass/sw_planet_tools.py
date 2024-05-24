@@ -192,6 +192,7 @@ class VapourFrc:
         entropy *= 1e-3  # switch to kJ/kg/K
         pressure *= 1e-9  # switch to Gpa
         self.vapour_frac = np.zeros(len(entropy))
+        self.super_frac = np.zeros(len(entropy))
         if mat_id == 400:
             self.super_sel = np.logical_and(
                 pressure > VapourFrc.forsterite_critical_P,
@@ -212,8 +213,8 @@ class VapourFrc:
             raise ValueError(
                 "Currently only have iron and forsterite vapour curve loaded"
             )
-        self.vapour_frac[self.super_sel] = (
-            2  # set supercritical vapour fraction factor to 2
+        self.super_frac[self.super_sel] = (
+            1  # set supercritical vapour fraction factor to 2
         )
         self.meltCurve, self.vaporCurve = load_melt_vapor_curve(mat_id)
 
