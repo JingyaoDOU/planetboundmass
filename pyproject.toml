@@ -26,3 +26,9 @@ dynamic = ["version"]
 
 [project.urls]
 Repository = "https://github.com/JingyaoDOU/planetboundmass"
+
+[tool.setuptools]
+packages = ["find:"]
+
+[tool.setuptools.packages.find]
+where = ["planetboundmass"]
