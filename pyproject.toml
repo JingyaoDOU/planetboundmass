@@ -4,7 +4,6 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "planetboundmass"
-version = "2024.05"
 authors = [
     {name = "Jingyao Dou", email = "jingyao.dou@bristol.ac.uk"},
 ]
