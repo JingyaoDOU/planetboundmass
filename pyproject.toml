@@ -10,7 +10,7 @@ authors = [
 description = "Search bound particles from SWIFT simulations"
 readme = "README.md"
 requires-python = ">=3.8"
-license = {file = "LICENSE"}
+license = {file = "LICENSE.txt"}
 dependencies = [
     "numpy",
     "matplotlib",
