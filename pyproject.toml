@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "planetboundmass"
+version = "2024.05"
+authors = [
+    {name = "Jingyao Dou", email = "jingyao.dou@bristol.ac.uk"},
+]
+description = "Search bound particles from SWIFT simulations"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {file = "LICENSE"}
+dependencies = [
+    "numpy",
+    "matplotlib",
+    "pandas",
+    "h5py",
+    "woma",
+    "unyt",
+    "swiftsimio",
+    "scipy",
+    "seaborn",
+]
+dynamic = ["version"]
+
+[project.urls]
+Repository = "https://github.com/JingyaoDOU/planetboundmass"
