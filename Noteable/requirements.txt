@@ -1,8 +1,0 @@
-numpy
-pandas
-swiftsimio
-woma
-matplotlib
-scipy
-h5py
-unyt
