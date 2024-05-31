@@ -28,4 +28,4 @@ dynamic = ["version"]
 Repository = "https://github.com/JingyaoDOU/planetboundmass"
 
 [tool.setuptools]
-packages = ["planetboundmass"]
+packages = ["planetboundmass","planetboundmass.boundmass"]
