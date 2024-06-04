@@ -1331,6 +1331,6 @@ def StG(loc, npt, coreid=401, mantleid=400, save_file=None):
     filename = loc.split("/")[-1].split("_")
     filename[0] = "gadgetSNAP"
     filename = "_".join(filename[:-1])
-    saveloc = save_dir + filename
+    # saveloc = save_dir + filename
 
-    s.write(saveloc)
+    s.write(save_file)
