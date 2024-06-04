@@ -1227,3 +1227,110 @@ def sw_profile_plot(
     plt.cla()
     plt.clf()
     plt.close()
+
+
+def StG(loc, npt, coreid=401, mantleid=400, save_file=None):
+    """Switch a swift snapshot to a gadget snapshot
+
+    Args:
+        loc (str): location of the swift snapshot
+        npt (int): number of particles in the target
+        coreid (int, optional): Core materials id (WoMA material id). Defaults to 401.
+        mantleid (int, optional): Mantle materials id (WoMa material id). Defaults to 400.
+        save_dir (_type_, optional): Absolute . Defaults to None.
+
+    Raises:
+        TypeError: _description_
+    """
+    data = sw.load(loc)
+    box_mid = 0.5 * data.metadata.boxsize[0].to(unyt.cm)
+    data.gas.coordinates.convert_to_cgs()
+    pos = data.gas.coordinates - box_mid
+
+    data.gas.velocities.convert_to_cgs()
+    vel = data.gas.velocities
+
+    data.gas.densities.convert_to_mks()
+    rho_mks = np.array(data.gas.densities)
+    data.gas.densities.convert_to_cgs()
+    rho_cgs = np.array(data.gas.densities)
+    data.gas.masses.convert_to_cgs()
+    m = data.gas.masses
+    data.gas.potentials.convert_to_cgs()
+    pot = data.gas.potentials
+    data.gas.smoothing_lengths.convert_to_cgs()
+    h = data.gas.smoothing_lengths
+    data.gas.internal_energies.convert_to_mks()
+    u = np.array(data.gas.internal_energies)
+
+    matid = data.gas.material_ids
+    pid = data.gas.particle_ids
+
+    pos = np.array(pos)
+    vel = np.array(vel)
+    pid = np.array(pid)
+    matid = np.array(matid)
+    rho = rho_cgs
+    m = np.array(m)
+    h = np.array(h)
+    matid = np.array(matid)
+    pot = np.array(pot)
+
+    sel_tar = pid < npt
+    sel_imp = pid >= npt
+
+    pid_tar_core_sel = np.logical_and(sel_tar, matid == coreid)
+    pid_tar_mantle_sel = np.logical_and(sel_tar, matid == mantleid)
+    pid_imp_core_sel = np.logical_and(sel_imp, matid == coreid)
+    pid_imp_mantle_sel = np.logical_and(sel_imp, matid == mantleid)
+
+    pid[pid_tar_core_sel] = np.arange(1, np.sum(pid_tar_core_sel) + 1)
+    pid[pid_tar_mantle_sel] = np.arange(1, np.sum(pid_tar_mantle_sel) + 1) + IDOFF
+
+    pid[pid_imp_core_sel] = np.arange(1, np.sum(pid_imp_core_sel) + 1) + BODYOFF
+    pid[pid_imp_mantle_sel] = (
+        np.arange(1, np.sum(pid_imp_mantle_sel) + 1) + IDOFF + BODYOFF
+    )
+
+    try:
+        entropy = woma.eos.eos.A1_s_u_rho(u, rho_mks, matid) * 1e4
+    except:
+        raise TypeError("error")
+    #        entropy=np.zeros_like(m)
+
+    num_particles = len(pos)
+
+    s = Snapshot()
+    s.header.npart = [num_particles, 0, 0, 0, 0, 0]
+    s.header.mass = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    s.header.time = 0.0
+    s.header.redshift = 0.0
+    s.header.flag_sfr = 0
+    s.header.flag_feedbacktp = 0
+    s.header.npartTotal = [num_particles, 0, 0, 0, 0, 0]
+    s.header.flag_cooling = 0
+    s.header.num_files = 1
+    s.header.BoxSize = 0.0
+    s.header.Omega0 = 0.0
+    s.header.OmegaLambda = 0.0
+    s.header.HubbleParam = 1.0
+    s.header.flag_stellarage = 0
+    s.header.flag_metals = 0
+    s.header.nallhw = [0, 0, 0, 0, 0, 0]
+    s.header.flag_entr_ics = 1
+    s.N = s.header.npart[0]
+    s.pos = pos
+    s.vel = vel
+    s.id = pid
+    s.m = m
+    s.S = entropy
+    s.rho = rho_cgs
+    s.hsml = h
+    s.pot = pot
+
+    filename = loc.split("/")[-1].split("_")
+    filename[0] = "gadgetSNAP"
+    filename = "_".join(filename[:-1])
+    saveloc = save_dir + filename
+
+    s.write(saveloc)
