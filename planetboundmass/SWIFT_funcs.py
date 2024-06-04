@@ -1242,6 +1242,9 @@ def StG(loc, npt, coreid=401, mantleid=400, save_file=None):
     Raises:
         TypeError: _description_
     """
+    IDOFF = 200000000
+    BODYOFF = int(IDOFF / 2)
+
     data = sw.load(loc)
     box_mid = 0.5 * data.metadata.boxsize[0].to(unyt.cm)
     data.gas.coordinates.convert_to_cgs()
