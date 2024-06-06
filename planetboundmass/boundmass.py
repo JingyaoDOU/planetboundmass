@@ -1044,7 +1044,7 @@ class Snap:
             pos_to_use = self.pos[self.matid != atmos_id]
         else:
             pos_to_use = self.pos
-
+        pos_to_use = pos_to_use.squeeze()
         xy = np.hypot(pos_to_use[:, 0], pos_to_use[:, 1])
         self.dis_com_noorder = np.hypot(xy, pos_to_use[:, 2])
         self.dis_com_order = np.sort(self.dis_com_noorder)
