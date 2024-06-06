@@ -1048,7 +1048,7 @@ class Snap:
         xy = np.hypot(pos_to_use[:, 0], pos_to_use[:, 1])
         self.dis_com_noorder = np.hypot(xy, pos_to_use[:, 2])
         self.dis_com_order = np.sort(self.dis_com_noorder)
-        self.dis_com_outer = np.mean(self.dis_com[-200:])
+        self.dis_com_outer = np.mean(self.dis_com_order[-200:])
 
         return 0
 
