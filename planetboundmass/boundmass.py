@@ -63,6 +63,7 @@ class Bound:
         self.tolerance = tolerance
         self.verbose = verbose
         self.snap = Snap(filename, npt=self.npt)
+        self.hit_direction = hit_direction
         self.load_data()
 
     def filename_check(self):
