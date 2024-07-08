@@ -32,7 +32,7 @@ class Bound:
         maxit=1000,
         max_bad_seeds=1000,
         verbose=1,
-        hitdirection="pX",
+        hit_direction="pX",
     ):
         if not filename.endswith("hdf5"):
             raise TypeError("Wrong filename, please check the file extension")
