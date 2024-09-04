@@ -8,7 +8,7 @@ G_cgs = 6.67408e-8  # in cgs
 Mearth_cgs = 5.97240e27  # in cgs
 
 
-def loadsw_to_woma(snapshot, unit="mks", if_R_atmos=False):
+def loadsw_to_woma(snapshot, unit="mks", if_R_atmos=False,if_core_radius:False):
     """load swift hdf5 snapshot date and calculate some necessary variables
 
     Args:
@@ -16,6 +16,7 @@ def loadsw_to_woma(snapshot, unit="mks", if_R_atmos=False):
         unit (str, optional): are we load mks unit or cgs unit. Defaults to "mks".
         R_atmos (bool, optional): Do we count thickness of the atmosphere when
             calculating the radius of the planet. Defaults to False.
+        if_core_radius (bool, optional): Whether to return the core radius. Defaults to False.
 
 
     """
@@ -67,21 +68,29 @@ def loadsw_to_woma(snapshot, unit="mks", if_R_atmos=False):
     pos -= pos_centerM
     vel -= vel_centerM
 
+    core_key_list = np.array([401,402])
     atmos_key_list = np.array([0, 1, 2, 200, 305, 306, 307])
     uniq_mat = np.unique(matid)
     atmos_id = np.intersect1d(atmos_key_list, uniq_mat)
+    core_id = np.intersect1d(core_key_list, uniq_mat)
 
     if not if_R_atmos:
         pos_to_use = pos[matid != atmos_id]
+        matid = matid[matid != atmos_id]
     else:
         pos_to_use = pos
 
     xy = np.hypot(pos_to_use[:, 0], pos_to_use[:, 1])
     r = np.hypot(xy, pos_to_use[:, 2])
+    if if_core_radius:
+        R_core = np.mean(np.sort(r[matid == core_id])[-100:])
     r = np.sort(r)
     R = np.mean(r[-200:])
-
-    return pos, vel, h, m, rho, p, u, matid, R
+    
+    if if_core_radius:
+        return pos, vel, h, m, rho, p, u, matid, R, R_core
+    else:
+        return pos, vel, h, m, rho, p, u, matid, R
 
 
 def edacm(
