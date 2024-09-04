@@ -10,6 +10,25 @@ from planetboundmass.sw_planet_tools import VapourFrc
 import pandas as pd
 import woma
 import seaborn as sns
+from numba import jit
+import sys
+import os
+
+current_dir = os.path.dirname(os.path.abspath(__file__))
+build_dir = os.path.join(current_dir, "build")
+
+sys.path.append(build_dir)
+from boundcpp import Boundcpp
+
+
+@jit(nopython=True)
+def numba_argsort(array):
+    return np.argsort(array)
+
+
+@jit(nopython=True)
+def numba_argmin(array):
+    return np.argmin(array)
 
 
 class Bound:
@@ -65,6 +84,7 @@ class Bound:
         self.snap = Snap(filename, npt=self.npt)
         self.hit_direction = hit_direction
         self.load_data()
+        self.bound_obj = Boundcpp()
 
     def filename_check(self):
         prefix_name = self.filename.split("/")[-1].split("_")[0]
@@ -106,7 +126,53 @@ class Bound:
         self.iron_key_list = self.snap.iron_key_list
         self.si_key_list = self.snap.si_key_list
 
+    # @jit
+    # def calculate_ke(self, masses, p_velocities, bnd_velocities):
+    #     ke = 0.5 * masses * np.sum((p_velocities - bnd_velocities) ** 2, axis=1)
+    #     return ke
+
+    # @jit
+    # def calculate_pe(self, masses, bnd_masses, p_positions, bnd_positions):
+    #     pe = (
+    #         -Bound.G
+    #         * bnd_masses
+    #         * masses
+    #         / np.hypot(
+    #             p_positions[:, 2] - bnd_positions[2],
+    #             np.hypot(
+    #                 p_positions[:, 0] - bnd_positions[0],
+    #                 p_positions[:, 1] - bnd_positions[1],
+    #             ),
+    #         )
+    #     )
+    #     return pe
+
+    def find_bound_cpp(self):
+        bound = self.bound_obj.boundcpp(
+            self.pid,
+            self.pot,
+            self.m,
+            self.pos,
+            self.vel,
+            self.matid,
+            self.num_rem,
+            self.minibound,
+            self.max_bad_seeds,
+            self.tolerance,
+            self.total_mass,
+            self.unique_matid,
+            self.Di_id_mat,
+            self.verbose,
+        )
+        # Add further processing of bound if needed
+        self.bound = bound
+
     def find_bound(self):
+        """Find the bound particles using iteration method
+
+        Args:
+            drop_U (bool): If true, when a remant is found, when find particles for the next remnant, potential energy from the previous found remnant will be dropped.
+        """
         # find bound particles
         bad_seeds = 0
         remnant_id = 1  # intialization
@@ -138,16 +204,19 @@ class Bound:
             if bad_seeds > self.max_bad_seeds:
                 if self.verbose:
                     print("----------break------------")
-                    print("Bad seeds larger than the maximum allowed bad seeds")
+                    print(
+                        "Bad seeds number larger than the maximum allowed bad seeds: %d, you could try a larger max_bad_seeds or this just suggests based on current minibound, there is no particle acting as a seed to be surronded by more than minibound number of particles"
+                        % self.max_bad_seeds
+                    )
                 break
 
             unbound_pid = self.pid[bound == 0]
             unbound_pot = self.pot[bound == 0]
 
-            arg_init_min_potseed = np.argmin(unbound_pot)
+            arg_init_min_potseed = numba_argmin(unbound_pot)
             init_min_pot_pid = unbound_pid[arg_init_min_potseed]
 
-            arg_init_min_potseed = np.where(np.in1d(self.pid, init_min_pot_pid))[0]
+            arg_init_min_potseed = np.where(np.isin(self.pid, init_min_pot_pid))[0]
 
             bound[arg_init_min_potseed] = remnant_id
 
@@ -160,8 +229,7 @@ class Bound:
             oldm = bnd_m / 10.0
             count = 0
             goback = False
-            a = 1
-            b = 1
+
             maxit = 1000
             # raise TypeError("check")
             while (count <= maxit) & (np.abs(oldm - bnd_m) / oldm > self.tolerance):
@@ -169,6 +237,8 @@ class Bound:
                 sel = np.where(bound == 0)[0]
                 pid_tmp = self.pid[sel]
                 # compute kinetic velocities
+                # ke = self.calculate_ke(self.m[sel], self.vel[sel], bnd_vel)
+                # pe = self.calculate_pe(self.m[sel], bnd_m, self.pos[sel], bnd_pos)
                 ke = 0.5 * self.m[sel] * np.sum((self.vel[sel] - bnd_vel) ** 2, axis=1)
                 pe = (
                     -Bound.G
@@ -187,15 +257,15 @@ class Bound:
                 if (count == 0) and (np.sum(sel_bound) == 0):
                     bound[bound == remnant_id] = (
                         -1
-                    )  # through the bad seeds with remnant id -1
+                    )  # throw away the bad seeds with remnant id -1
                     bad_seeds += 1
-                    goback = True
+                    goback = True  # start from the beginning to search for a new seed
                     # print("Bad starting")
                     break
 
                 if np.sum(sel_bound) > 0:
                     pid_bnd = pid_tmp[sel_bound]
-                    arg_bound_in = np.where(np.in1d(self.pid, pid_bnd))[0]
+                    arg_bound_in = np.where(np.isin(self.pid, pid_bnd))[0]
                     bound[arg_bound_in] = remnant_id
                     bnd_m = np.sum(self.m[arg_bound_in])
                     bnd_pos = (
@@ -258,7 +328,7 @@ class Bound:
         bound[bound == -1] = 0
 
         # reorder the bound mass to print out the largest one first
-        arg_sel_desc = np.argsort(m_rem)[::-1]
+        arg_sel_desc = numba_argsort(m_rem)[::-1]
         bound_id = bound_id[arg_sel_desc]
         mass_ratio = mass_ratio[arg_sel_desc]
         num_par_rem = num_par_rem[arg_sel_desc]
@@ -576,7 +646,7 @@ class Bound:
         # calculate the kenetic energy of the particles
         ke_bnd = 0.5 * m_bnd * np.sum(vel_bnd**2, axis=1)
         # Using a moving average calculation to find the planet-disk boundary (max particle KE)
-        r_bnd_argsort = np.argsort(r_bnd)
+        r_bnd_argsort = numba_argsort(r_bnd)
         Navg = Navg
         KEmax = 0
         rKEmax = 0
@@ -753,9 +823,9 @@ class Bound:
             sizes[self.matid_tar_imp == matid] = self.Di_id_size[matid]
 
         if sel_pid is not None:
-            colours[np.in1d(self.pid, sel_pid)] = selp_color
-            sizes[np.in1d(self.pid, sel_pid)] = (
-                selp_size * sizes[np.in1d(self.pid, sel_pid)]
+            colours[np.isin(self.pid, sel_pid)] = selp_color
+            sizes[np.isin(self.pid, sel_pid)] = (
+                selp_size * sizes[np.isin(self.pid, sel_pid)]
             )
 
         fig = plt.figure(figsize=(12, 6))
@@ -785,8 +855,8 @@ class Bound:
             sizes_lr = sizes[sel_lr_rem_arg]
 
             # plot particles with z or x < 0.1 R_earth and sort them by z or x
-            arg_sort_pos_z = np.argsort(pos_lr[:, 2])
-            arg_sort_pos_x = np.argsort(pos_lr[:, 0])
+            arg_sort_pos_z = numba_argsort(pos_lr[:, 2])
+            arg_sort_pos_x = numba_argsort(pos_lr[:, 0])
 
             search_sort_z = np.searchsorted(
                 pos_lr[arg_sort_pos_z, 2],
@@ -867,8 +937,8 @@ class Bound:
                 3 * sizes[self.bound == mode]
             )  # make the remnant larger and clearer to see
 
-            arg_sort_pos_z = np.argsort(self.pos[:, 2])
-            arg_sort_pos_x = np.argsort(self.pos[:, 0])
+            arg_sort_pos_z = numba_argsort(self.pos[:, 2])
+            arg_sort_pos_x = numba_argsort(self.pos[:, 0])
 
             search_sort_z = np.searchsorted(
                 self.pos[arg_sort_pos_z, 2],
@@ -1110,7 +1180,7 @@ class Snap:
         if sel_pid is not None:
             colours[np.isin(self.pid, sel_pid)] = selp_color
             sizes[np.isin(self.pid, sel_pid)] = (
-                selp_size * sizes[np.in1d(self.pid, sel_pid)]
+                selp_size * sizes[np.isin(self.pid, sel_pid)]
             )
         if sel_matid >= 0:
             sel_pos[(self.matid != sel_matid)] = 0
@@ -1137,7 +1207,7 @@ class Snap:
         # fig = plt.figure(figsize=(8, 8))
         # ax = fig.add_subplot(111)
         if aspect == "xy":
-            arg_sort_pos_z = np.argsort(plot_pos[:, 2])
+            arg_sort_pos_z = numba_argsort(plot_pos[:, 2])
             search_sort_z = np.searchsorted(
                 plot_pos[arg_sort_pos_z, 2],
                 plot_pos[:, 2][plot_pos[:, 2] <= 0.1 * Bound.R_earth],
@@ -1154,7 +1224,7 @@ class Snap:
             ax.set_ylabel(r"y Position ($R_\oplus$)", fontsize=16)
 
         elif aspect == "yz":
-            arg_sort_pos_x = np.argsort(plot_pos[:, 0])
+            arg_sort_pos_x = numba_argsort(plot_pos[:, 0])
             search_sort_x = np.searchsorted(
                 plot_pos[arg_sort_pos_x, 0],
                 plot_pos[:, 0][plot_pos[:, 0] <= 0.1 * Bound.R_earth],
@@ -1169,7 +1239,7 @@ class Snap:
             ax.set_xlabel(r"y Position ($R_\oplus$)", fontsize=16)
             ax.set_ylabel(r"z Position ($R_\oplus$)", fontsize=16)
         else:
-            arg_sort_pos_x = np.argsort(plot_pos[:, 1])
+            arg_sort_pos_x = numba_argsort(plot_pos[:, 1])
             search_sort_x = np.searchsorted(
                 plot_pos[arg_sort_pos_x, 1],
                 plot_pos[:, 1][plot_pos[:, 1] <= 0.1 * Bound.R_earth],

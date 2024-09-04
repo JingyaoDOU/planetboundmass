@@ -39,7 +39,7 @@ from scipy.optimize import curve_fit
 import matplotlib.colors as mcolors
 import matplotlib.ticker as mticker
 import colorcet as cc
-from planetboundmass import Bound, Snap
+from .boundmass import Bound, Snap
 
 # import cmcrameri.cm as cmc
 from matplotlib.pyplot import get_cmap

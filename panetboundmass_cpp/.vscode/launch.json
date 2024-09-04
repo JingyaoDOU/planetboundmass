@@ -1,0 +1,13 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "C/C++ Runner: Debug Session",
+      "type": "lldb",
+      "request": "launch",
+      "args": [],
+      "cwd": "/Users/qb20321/Desktop/SWIFTother/planetboundmass/panetboundmass_cpp",
+      "program": "/Users/qb20321/Desktop/SWIFTother/planetboundmass/panetboundmass_cpp/build/Debug/outDebug"
+    }
+  ]
+}
