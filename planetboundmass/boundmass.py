@@ -325,7 +325,7 @@ class Bound:
                 )
                 sel_redis_bound = ke + pe < 0.0
 
-                self.bound[sel_redis_bound] = rem_bid
+                self.bound[self.bound == bid][sel_redis_bound] = rem_bid
 
                 if verbose:
                     print(
