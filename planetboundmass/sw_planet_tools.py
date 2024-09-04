@@ -8,7 +8,7 @@ G_cgs = 6.67408e-8  # in cgs
 Mearth_cgs = 5.97240e27  # in cgs
 
 
-def loadsw_to_woma(snapshot, unit="mks", if_R_atmos=False,if_core_radius:False):
+def loadsw_to_woma(snapshot, unit="mks", if_R_atmos=False, if_core_radius=False):
     """load swift hdf5 snapshot date and calculate some necessary variables
 
     Args:
@@ -68,7 +68,7 @@ def loadsw_to_woma(snapshot, unit="mks", if_R_atmos=False,if_core_radius:False):
     pos -= pos_centerM
     vel -= vel_centerM
 
-    core_key_list = np.array([401,402])
+    core_key_list = np.array([401, 402])
     atmos_key_list = np.array([0, 1, 2, 200, 305, 306, 307])
     uniq_mat = np.unique(matid)
     atmos_id = np.intersect1d(atmos_key_list, uniq_mat)
@@ -86,7 +86,7 @@ def loadsw_to_woma(snapshot, unit="mks", if_R_atmos=False,if_core_radius:False):
         R_core = np.mean(np.sort(r[matid == core_id])[-100:])
     r = np.sort(r)
     R = np.mean(r[-200:])
-    
+
     if if_core_radius:
         return pos, vel, h, m, rho, p, u, matid, R, R_core
     else:
