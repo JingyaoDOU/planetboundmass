@@ -86,7 +86,6 @@ def loadsw_to_woma(snapshot, unit="mks", if_R_atmos=False, if_core_radius=False)
     xy = np.hypot(pos_to_use[:, 0], pos_to_use[:, 1])
     r = np.hypot(xy, pos_to_use[:, 2])
     if if_core_radius:
-        print(matid.shape)
         R_core = np.mean(np.sort(r[matid == core_id])[-100:])
     r = np.sort(r)
     R = np.mean(r[-200:])
