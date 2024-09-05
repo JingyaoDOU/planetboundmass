@@ -324,6 +324,7 @@ class Bound:
             verbose (int, optional): Whether to print out information verbosely Defaults to 1.
         """
         for bid in self.bound_id:
+            bound_cp = copy(self.bound)
             for rem_bid in self.bound_id[self.bound_id != bid]:
                 rem_com = np.sum(
                     self.pos[self.bound == rem_bid]
@@ -352,17 +353,19 @@ class Bound:
                 )
                 sel_redis_bound = ke + pe < 0.0
 
-                bid_mask = self.bound == bid
-                update_mask = np.zeros_like(self.bound, dtype=bool)
+                bid_mask = bound_cp == bid
+                update_mask = np.zeros_like(bound_cp, dtype=bool)
                 update_mask[bid_mask] = sel_redis_bound
 
-                self.bound[update_mask] = rem_bid
+                bound_cp[update_mask] = rem_bid
 
                 if verbose:
                     print(
                         "Remnant %d: %d particles are redistributed to remnant %d"
                         % (bid, np.sum(sel_redis_bound), rem_bid)
                     )
+
+            self.bound = bound_cp
 
     def print_info(self):
         i = 0
