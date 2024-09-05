@@ -106,7 +106,12 @@ class Bound:
         self.iron_key_list = self.snap.iron_key_list
         self.si_key_list = self.snap.si_key_list
 
-    def find_bound(self):
+    def find_bound(self, reU=False):
+        """Find the bound particles and calculate the bound remnants.
+
+        Args:
+            reU (bool, optional): Whether to recalculate the potential energy of particles about a remnant was found. Defaults to False.
+        """
         # find bound particles
         bad_seeds = 0
         remnant_id = 1  # intialization
@@ -143,6 +148,27 @@ class Bound:
 
             unbound_pid = self.pid[bound == 0]
             unbound_pot = self.pot[bound == 0]
+            unbound_pos = self.pos[bound == 0]
+
+            if reU:
+                unbound_m = self.m[bound == 0]
+                bound_pot = self.pot[bound > 0]
+                bound_pos = self.pos[bound > 0]
+                bound_m = self.m[bound > 0]
+                if remnant_id > 1:  # already found one remnant
+                    # re-calculating the potential for the unbound particles
+                    for i in range(len(unbound_pid)):
+                        unbound_pot[i] -= np.sum(
+                            -Bound.G
+                            * bound_m
+                            / np.hypot(
+                                bound_pos[:, 2] - unbound_pos[i, 2],
+                                np.hypot(
+                                    bound_pos[:, 0] - unbound_pos[i, 0],
+                                    bound_pos[:, 1] - unbound_pos[i, 1],
+                                ),
+                            )
+                        )
 
             arg_init_min_potseed = np.argmin(unbound_pot)
             init_min_pot_pid = unbound_pid[arg_init_min_potseed]
