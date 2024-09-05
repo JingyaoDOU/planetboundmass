@@ -342,7 +342,7 @@ class Bound:
                     * self.m[self.bound == bid]
                     * np.sum((self.vel[self.bound == bid] - rem_vel) ** 2, axis=1)
                 )
-                pe = (Bound.G * rem_m * self.m[self.bound == bid]) / np.hypot(
+                pe = (-Bound.G * rem_m * self.m[self.bound == bid]) / np.hypot(
                     self.pos[self.bound == bid, 2] - rem_com[2],
                     np.hypot(
                         self.pos[self.bound == bid, 0] - rem_com[0],
