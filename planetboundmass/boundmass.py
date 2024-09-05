@@ -353,8 +353,12 @@ class Bound:
                 sel_redis_bound = ke + pe < 0.0
 
                 print(len(self.bound[self.bound == bid]))
-                # self.bound[self.bound == bid, sel_redis_bound] = rem_bid
-                self.bound[(self.bound == bid) & sel_redis_bound] = rem_bid
+
+                bid_mask = self.bound == bid
+                update_mask = np.zeros_like(self.bound, dtype=bool)
+                update_mask[bid_mask] = sel_redis_bound
+
+                self.bound[update_mask] = rem_bid
                 print(len(self.bound[self.bound == bid]))
 
                 if verbose:
