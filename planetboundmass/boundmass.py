@@ -365,7 +365,7 @@ class Bound:
                         % (bid, np.sum(sel_redis_bound), rem_bid)
                     )
 
-            self.bound = bound_cp
+        self.bound = bound_cp
 
     def print_info(self):
         i = 0
