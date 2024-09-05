@@ -351,14 +351,10 @@ class Bound:
                     ),
                 )
                 sel_redis_bound = ke + pe < 0.0
-                print(np.sum(sel_redis_bound))
+
                 print(len(self.bound[self.bound == bid]))
                 # self.bound[self.bound == bid, sel_redis_bound] = rem_bid
-                mask = self.bound == bid
-                self.bound[
-                    mask & (np.arange(self.bound.shape[0]) == sel_redis_bound)
-                ] = rem_bid
-
+                self.bound[(self.bound == bid) & sel_redis_bound] = rem_bid
                 print(len(self.bound[self.bound == bid]))
 
                 if verbose:
