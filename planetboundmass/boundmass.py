@@ -158,7 +158,7 @@ class Bound:
                 if remnant_id > 1:  # already found one remnant
                     # re-calculating the potential for the unbound particles
                     for i in range(len(unbound_pid)):
-                        unbound_pot[i] -= np.sum(
+                        unbound_pot[i] -= (unyt.J / unyt.kg) * np.sum(
                             -Bound.G
                             * bound_m
                             / np.hypot(
