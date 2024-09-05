@@ -325,7 +325,7 @@ class Bound:
         """
         for bid in self.bound_id:
             bound_cp = copy(self.bound)
-            for rem_bid in self.bound_id[self.bound_id != bid]:
+            for rem_bid in self.bound_id[self.bound_id > bid]:
                 rem_com = np.sum(
                     self.pos[self.bound == rem_bid]
                     * self.m[self.bound == rem_bid, np.newaxis],
