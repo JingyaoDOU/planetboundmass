@@ -335,6 +335,7 @@ class Bound:
                     * self.m[self.bound == rem_bid, np.newaxis],
                     axis=0,
                 ) / np.sum(self.m[self.bound == rem_bid])
+
                 rem_m = np.sum(self.m[self.bound == rem_bid])
 
                 ke = (
@@ -351,7 +352,7 @@ class Bound:
                 )
                 sel_redis_bound = ke + pe < 0.0
 
-                self.bound[self.bound == bid][sel_redis_bound] = rem_bid
+                self.bound[(self.bound == bid) & (sel_redis_bound)] = rem_bid
 
                 if verbose:
                     print(
