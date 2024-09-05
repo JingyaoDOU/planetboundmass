@@ -324,7 +324,7 @@ class Bound:
             verbose (int, optional): Whether to print out information verbosely Defaults to 1.
         """
         for bid in self.bound_id:
-            for rem_bid in self.bound_id[self.bound_id > bid]:
+            for rem_bid in self.bound_id[self.bound_id != bid]:
                 rem_com = np.sum(
                     self.pos[self.bound == rem_bid]
                     * self.m[self.bound == rem_bid, np.newaxis],
