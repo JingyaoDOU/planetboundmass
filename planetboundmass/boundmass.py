@@ -323,87 +323,89 @@ class Bound:
         Args:
             verbose (int, optional): Whether to print out information verbosely Defaults to 1.
         """
-        bound_cp = copy(self.bound)
-        # for bid in self.bound_id:
-        #     bound_cp = copy(self.bound)
-        #     for rem_bid in self.bound_id[self.bound_id > bid]:
-        rem_m = np.sum(self.m[self.bound == rem_bid])
+        # bound_cp = copy(self.bound)
+        for bid in self.bound_id:
+            bound_cp = copy(self.bound)
+            for rem_bid in self.bound_id[self.bound_id > bid]:
+                rem_m = np.sum(self.m[self.bound == rem_bid])
 
-        rem_com = (
-            np.sum(
-                self.pos[self.bound == rem_bid]
-                * self.m[self.bound == rem_bid, np.newaxis],
-                axis=0,
-            )
-            / rem_m
-        )
-        rem_vel = (
-            np.sum(
-                self.vel[self.bound == rem_bid]
-                * self.m[self.bound == rem_bid, np.newaxis],
-                axis=0,
-            )
-            / rem_m
-        )
+                rem_com = (
+                    np.sum(
+                        self.pos[self.bound == rem_bid]
+                        * self.m[self.bound == rem_bid, np.newaxis],
+                        axis=0,
+                    )
+                    / rem_m
+                )
+                rem_vel = (
+                    np.sum(
+                        self.vel[self.bound == rem_bid]
+                        * self.m[self.bound == rem_bid, np.newaxis],
+                        axis=0,
+                    )
+                    / rem_m
+                )
 
-        c_rem_m = np.sum(self.m[self.bound == bid])
+                c_rem_m = np.sum(self.m[self.bound == bid])
 
-        c_rem_com = (
-            np.sum(
-                self.pos[self.bound == bid] * self.m[self.bound == bid, np.newaxis],
-                axis=0,
-            )
-            / c_rem_m
-        )
-        c_rem_vel = (
-            np.sum(
-                self.vel[self.bound == bid] * self.m[self.bound == bid, np.newaxis],
-                axis=0,
-            )
-            / c_rem_m
-        )
+                c_rem_com = (
+                    np.sum(
+                        self.pos[self.bound == bid]
+                        * self.m[self.bound == bid, np.newaxis],
+                        axis=0,
+                    )
+                    / c_rem_m
+                )
+                c_rem_vel = (
+                    np.sum(
+                        self.vel[self.bound == bid]
+                        * self.m[self.bound == bid, np.newaxis],
+                        axis=0,
+                    )
+                    / c_rem_m
+                )
 
-        ke = (
-            0.5
-            * self.m[self.bound == bid]
-            * np.sum((self.vel[self.bound == bid] - rem_vel) ** 2, axis=1)
-        )
-        pe = (-Bound.G * rem_m * self.m[self.bound == bid]) / np.hypot(
-            self.pos[self.bound == bid, 2] - rem_com[2],
-            np.hypot(
-                self.pos[self.bound == bid, 0] - rem_com[0],
-                self.pos[self.bound == bid, 1] - rem_com[1],
-            ),
-        )
+                ke = (
+                    0.5
+                    * self.m[self.bound == bid]
+                    * np.sum((self.vel[self.bound == bid] - rem_vel) ** 2, axis=1)
+                )
+                pe = (-Bound.G * rem_m * self.m[self.bound == bid]) / np.hypot(
+                    self.pos[self.bound == bid, 2] - rem_com[2],
+                    np.hypot(
+                        self.pos[self.bound == bid, 0] - rem_com[0],
+                        self.pos[self.bound == bid, 1] - rem_com[1],
+                    ),
+                )
 
-        c_ke = (
-            0.5
-            * self.m[self.bound == bid]
-            * np.sum((self.vel[self.bound == bid] - c_rem_vel) ** 2, axis=1)
-        )
-        c_pe = (-Bound.G * c_rem_m * self.m[self.bound == bid]) / np.hypot(
-            self.pos[self.bound == bid, 2] - c_rem_com[2],
-            np.hypot(
-                self.pos[self.bound == bid, 0] - c_rem_com[0],
-                self.pos[self.bound == bid, 1] - c_rem_com[1],
-            ),
-        )
+                c_ke = (
+                    0.5
+                    * self.m[self.bound == bid]
+                    * np.sum((self.vel[self.bound == bid] - c_rem_vel) ** 2, axis=1)
+                )
+                c_pe = (-Bound.G * c_rem_m * self.m[self.bound == bid]) / np.hypot(
+                    self.pos[self.bound == bid, 2] - c_rem_com[2],
+                    np.hypot(
+                        self.pos[self.bound == bid, 0] - c_rem_com[0],
+                        self.pos[self.bound == bid, 1] - c_rem_com[1],
+                    ),
+                )
 
-        sel_redis_bound = (ke + pe < 0.0) & (c_pe > pe)
+                sel_redis_bound = (ke + pe < 0.0) & (c_pe > pe)
 
-        bid_mask = self.bound == bid
-        update_mask = np.zeros_like(bound_cp, dtype=bool)
-        update_mask[bid_mask] = sel_redis_bound
+                bid_mask = self.bound == bid
+                update_mask = np.zeros_like(bound_cp, dtype=bool)
+                update_mask[bid_mask] = sel_redis_bound
 
-        bound_cp[update_mask] = rem_bid
+                bound_cp[update_mask] = rem_bid
 
-        if verbose:
-            print(
-                "Remnant %d: %d particles are redistributed to remnant %d"
-                % (bid, np.sum(sel_redis_bound), rem_bid)
-            )
+                if verbose:
+                    print(
+                        "Remnant %d: %d particles are redistributed to remnant %d"
+                        % (bid, np.sum(sel_redis_bound), rem_bid)
+                    )
 
-        self.bound = bound_cp
+            self.bound = bound_cp
 
     def print_info(self):
         i = 0
