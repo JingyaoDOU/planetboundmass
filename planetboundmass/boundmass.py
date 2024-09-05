@@ -317,55 +317,54 @@ class Bound:
         if self.verbose != 0:
             self.print_info()
 
-    def re_distribute(self, verbose=1):
+    def re_distribute(self, bid, rem_bid, verbose=1):
         """After the bound remnants are found, recalcuate is any particles in a remnant should be redistributed to other remnants.
 
         Args:
             verbose (int, optional): Whether to print out information verbosely Defaults to 1.
         """
-        for bid in self.bound_id:
-            bound_cp = copy(self.bound)
-            for rem_bid in self.bound_id[self.bound_id > bid]:
-                rem_com = np.sum(
-                    self.pos[self.bound == rem_bid]
-                    * self.m[self.bound == rem_bid, np.newaxis],
-                    axis=0,
-                ) / np.sum(self.m[self.bound == rem_bid])
-                rem_vel = np.sum(
-                    self.vel[self.bound == rem_bid]
-                    * self.m[self.bound == rem_bid, np.newaxis],
-                    axis=0,
-                ) / np.sum(self.m[self.bound == rem_bid])
+        bound_cp = copy(self.bound)
+        # for bid in self.bound_id:
+        #     bound_cp = copy(self.bound)
+        #     for rem_bid in self.bound_id[self.bound_id > bid]:
+        rem_com = np.sum(
+            self.pos[self.bound == rem_bid] * self.m[self.bound == rem_bid, np.newaxis],
+            axis=0,
+        ) / np.sum(self.m[self.bound == rem_bid])
+        rem_vel = np.sum(
+            self.vel[self.bound == rem_bid] * self.m[self.bound == rem_bid, np.newaxis],
+            axis=0,
+        ) / np.sum(self.m[self.bound == rem_bid])
 
-                rem_m = np.sum(self.m[self.bound == rem_bid])
+        rem_m = np.sum(self.m[self.bound == rem_bid])
 
-                ke = (
-                    0.5
-                    * self.m[self.bound == bid]
-                    * np.sum((self.vel[self.bound == bid] - rem_vel) ** 2, axis=1)
-                )
-                pe = (-Bound.G * rem_m * self.m[self.bound == bid]) / np.hypot(
-                    self.pos[self.bound == bid, 2] - rem_com[2],
-                    np.hypot(
-                        self.pos[self.bound == bid, 0] - rem_com[0],
-                        self.pos[self.bound == bid, 1] - rem_com[1],
-                    ),
-                )
-                sel_redis_bound = ke + pe < 0.0
+        ke = (
+            0.5
+            * self.m[self.bound == bid]
+            * np.sum((self.vel[self.bound == bid] - rem_vel) ** 2, axis=1)
+        )
+        pe = (-Bound.G * rem_m * self.m[self.bound == bid]) / np.hypot(
+            self.pos[self.bound == bid, 2] - rem_com[2],
+            np.hypot(
+                self.pos[self.bound == bid, 0] - rem_com[0],
+                self.pos[self.bound == bid, 1] - rem_com[1],
+            ),
+        )
+        sel_redis_bound = ke + pe < 0.0
 
-                bid_mask = self.bound == bid
-                update_mask = np.zeros_like(bound_cp, dtype=bool)
-                update_mask[bid_mask] = sel_redis_bound
+        bid_mask = self.bound == bid
+        update_mask = np.zeros_like(bound_cp, dtype=bool)
+        update_mask[bid_mask] = sel_redis_bound
 
-                bound_cp[update_mask] = rem_bid
+        bound_cp[update_mask] = rem_bid
 
-                if verbose:
-                    print(
-                        "Remnant %d: %d particles are redistributed to remnant %d"
-                        % (bid, np.sum(sel_redis_bound), rem_bid)
-                    )
+        if verbose:
+            print(
+                "Remnant %d: %d particles are redistributed to remnant %d"
+                % (bid, np.sum(sel_redis_bound), rem_bid)
+            )
 
-            self.bound = bound_cp
+        self.bound = bound_cp
 
     def print_info(self):
         i = 0
