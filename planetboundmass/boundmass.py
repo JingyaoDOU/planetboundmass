@@ -353,7 +353,7 @@ class Bound:
                 )
                 sel_redis_bound = ke + pe < 0.0
 
-                bid_mask = bound_cp == bid
+                bid_mask = self.bound == bid
                 update_mask = np.zeros_like(bound_cp, dtype=bool)
                 update_mask[bid_mask] = sel_redis_bound
 
