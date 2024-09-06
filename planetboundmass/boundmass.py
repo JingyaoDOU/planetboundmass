@@ -317,6 +317,71 @@ class Bound:
         if self.verbose != 0:
             self.print_info()
 
+    def calculate_mass(self):
+        """recalculate the mass of the bound particles after re-disribution"""
+        m_rem = np.zeros(self.num_rem)
+        num_par_rem = np.zeros(self.num_rem, dtype=int)
+        mass_ratio = np.zeros(self.num_rem)  # M_rem / M_total
+
+        element_ratio_array = {}
+        element_mass_array = {}
+
+        for remnant_id in self.bound_id:
+
+            arg_bound_out = self.bound == remnant_id
+            m_bound = self.m[arg_bound_out]
+            rem_mass = np.sum(m_bound)  # mass of the remnant in this turn
+            matid_bound = self.matid[arg_bound_out]
+
+            for mat_id in self.unique_matid:
+                element_mass = np.sum(m_bound[matid_bound == mat_id])
+
+                array_name = self.Di_id_mat[mat_id] + "_mass"
+                element_mass_array[array_name][remnant_id - 1] = (
+                    element_mass / Bound.M_earth
+                )
+                array_name = self.Di_id_mat[mat_id] + "_ratio"
+                element_ratio_array[array_name][remnant_id - 1] = (
+                    element_mass / rem_mass
+                )
+
+            m_rem[remnant_id - 1] = rem_mass / Bound.M_earth
+            mass_ratio[remnant_id - 1] = rem_mass / Bound.M_earth / self.total_mass
+            num_par_rem[remnant_id - 1] = np.sum(self.bound == remnant_id)
+
+        arg_sel_desc = np.argsort(m_rem)[::-1]
+        bound_id = self.bound_id[arg_sel_desc]
+        mass_ratio = mass_ratio[arg_sel_desc]
+        num_par_rem = num_par_rem[arg_sel_desc]
+
+        for mat_id in self.unique_matid:
+            array_name = self.Di_id_mat[mat_id] + "_mass"
+            element_mass_array[array_name] = element_mass_array[array_name][
+                arg_sel_desc
+            ]
+            array_name = self.Di_id_mat[mat_id] + "_ratio"
+            element_ratio_array[array_name] = element_ratio_array[array_name][
+                arg_sel_desc
+            ]
+        m_rem = m_rem[arg_sel_desc]
+
+        cp_bid = deepcopy(self.bound)  # make a copy
+        for i in range(len(bound_id)):
+            if bound_id[i] != 0:
+                cp_bid[self.bound == bound_id[i]] = i + 1
+                bound_id[i] = i + 1
+
+        bound = cp_bid
+        self.bound_id = bound_id
+        self.bound = bound
+        self.mass_ratio = mass_ratio
+        self.m_rem = m_rem
+        self.num_par_rem = num_par_rem
+        self.element_mass_array = element_mass_array
+        self.element_ratio_array = element_ratio_array
+        if self.verbose != 0:
+            self.print_info()
+
     def re_distribute(self, bid, rem_bid, verbose=1):
         """After the bound remnants are found, recalcuate is any particles in a remnant should be redistributed to other remnants.
 
