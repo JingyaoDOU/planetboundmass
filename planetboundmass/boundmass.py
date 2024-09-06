@@ -326,6 +326,12 @@ class Bound:
         element_ratio_array = {}
         element_mass_array = {}
 
+        for mat_id in self.unique_matid:
+            array_name = self.Di_id_mat[mat_id] + "_ratio"
+            element_ratio_array[array_name] = np.zeros(self.num_rem)
+            array_name = self.Di_id_mat[mat_id] + "_mass"
+            element_mass_array[array_name] = np.zeros(self.num_rem)
+
         for remnant_id in self.bound_id:
 
             arg_bound_out = self.bound == remnant_id
