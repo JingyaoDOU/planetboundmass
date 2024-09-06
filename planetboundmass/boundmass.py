@@ -333,7 +333,7 @@ class Bound:
             element_mass_array[array_name] = np.zeros(self.num_rem)
 
         for remnant_id in self.bound_id:
-
+            remnant_id = int(remnant_id)
             arg_bound_out = self.bound == remnant_id
             m_bound = self.m[arg_bound_out]
             rem_mass = np.sum(m_bound)  # mass of the remnant in this turn
