@@ -678,34 +678,36 @@ class Bound:
             ) / np.sum(self.m[self.matid_tar_imp == mantle_id])
 
         if verbose:
+            print("{:.2f} % of core vapourized".format(100 * self.core_vapour_fraction))
             print(
-                "{:.2f} %% of core vapourized".format(100 * self.core_vapour_fraction)
-            )
-            print(
-                "{:.2f} %% of mantle vapourized".format(
+                "{:.2f} % of mantle vapourized".format(
                     100 * self.mantle_vapour_fraction
                 )
             )
-
             print(
-                "{:.2f} %% of core in super critical state".format(
+                "-----------------------------------------------------------------------"
+            )
+            print(
+                "{:.2f} % of core in super critical state".format(
                     100 * self.core_super_critical
                 )
             )
             print(
-                "{:.2f} %% of mantle in super critical state".format(
+                "{:.2f} % of mantle in super critical state".format(
                     100 * self.mantle_super_critical
                 )
             )
-
+            print(
+                "-----------------------------------------------------------------------"
+            )
             if calculate_targ:
                 print(
-                    "{:.2f} %% of core in target is vapourized".format(
+                    "{:.2f} % of core in target is vapourized".format(
                         100 * self.targ_core_vapour_fraction
                     )
                 )
                 print(
-                    "{:.2f} %% of mantle in target is vapourized".format(
+                    "{:.2f} % of mantle in target is vapourized".format(
                         100 * self.targ_mantle_vapour_fraction
                     )
                 )
