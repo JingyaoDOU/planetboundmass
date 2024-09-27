@@ -622,7 +622,7 @@ class Bound:
             woma.load_eos_tables(["ANEOS_iron", "ANEOS_forsterite", "ANEOS_Fe85Si15"])
             self.T = woma.eos.eos.A1_T_u_rho(self.u, self.rho_mks, self.matid)
 
-    def total_vap_fraction(self, verbose=1):
+    def total_vap_fraction(self, calculate_targ=False, verbose=1):
         """
         Calculates the total vapour fraction of core and mantle materials.
         """
@@ -666,6 +666,16 @@ class Bound:
 
         self.particle_vapour_fraction[core_arg] = core_vapour_fraction
         self.particle_vapour_fraction[mantle_arg] = mantle_vapour_fraction
+
+        if calculate_targ:
+            self.targ_core_vapour_fraction = np.sum(
+                self.particle_vapour_fraction[self.matid_tar_imp == core_id]
+                * self.m[self.matid_tar_imp == core_id]
+            ) / np.sum(self.m[self.matid_tar_imp == core_id])
+            self.targ_mantle_vapour_fraction = np.sum(
+                self.particle_vapour_fraction[self.matid_tar_imp == mantle_id]
+                * self.m[self.matid_tar_imp == mantle_id]
+            ) / np.sum(self.m[self.matid_tar_imp == mantle_id])
 
         if verbose:
             print(
