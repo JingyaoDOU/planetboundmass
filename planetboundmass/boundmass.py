@@ -653,6 +653,9 @@ class Bound:
             self.m[mantle_arg] * mantle_vapour_fraction
         ) / np.sum(self.m[mantle_arg])
 
+        self.particle_vapour_fraction[core_arg] = core_vapour_fraction
+        self.particle_vapour_fraction[mantle_arg] = mantle_vapour_fraction
+
         sel_super_mantle = mantle_vf.super_critical()
         sel_super_core = core_vf.super_critical()
 
@@ -664,8 +667,10 @@ class Bound:
             self.m[core_arg]
         )
 
-        self.particle_vapour_fraction[core_arg] = core_vapour_fraction
-        self.particle_vapour_fraction[mantle_arg] = mantle_vapour_fraction
+        self.particle_super_critical_fraction = np.zeros(len(self.pid))
+
+        self.particle_super_critical_fraction[core_arg] = sel_super_core
+        self.particle_super_critical_fraction[mantle_arg] = sel_super_mantle
 
         if calculate_targ:
             self.targ_core_vapour_fraction = np.sum(
@@ -674,6 +679,15 @@ class Bound:
             ) / np.sum(self.m[self.matid_tar_imp == core_id])
             self.targ_mantle_vapour_fraction = np.sum(
                 self.particle_vapour_fraction[self.matid_tar_imp == mantle_id]
+                * self.m[self.matid_tar_imp == mantle_id]
+            ) / np.sum(self.m[self.matid_tar_imp == mantle_id])
+
+            self.targ_core_sup_fraction = np.sum(
+                self.particle_super_critical_fraction[self.matid_tar_imp == core_id]
+                * self.m[self.matid_tar_imp == core_id]
+            ) / np.sum(self.m[self.matid_tar_imp == core_id])
+            self.targ_mantle_sup_fraction = np.sum(
+                self.particle_super_critical_fraction[self.matid_tar_imp == mantle_id]
                 * self.m[self.matid_tar_imp == mantle_id]
             ) / np.sum(self.m[self.matid_tar_imp == mantle_id])
 
@@ -709,6 +723,19 @@ class Bound:
                 print(
                     "{:.2f} % of mantle in target is vapourized".format(
                         100 * self.targ_mantle_vapour_fraction
+                    )
+                )
+                print(
+                    "-----------------------------------------------------------------------"
+                )
+                print(
+                    "{:.2f} % of core in target is super critical".format(
+                        100 * self.targ_core_sup_fraction
+                    )
+                )
+                print(
+                    "{:.2f} % of mantle in target is super critical".format(
+                        100 * self.targ_mantle_sup_fraction
                     )
                 )
 
