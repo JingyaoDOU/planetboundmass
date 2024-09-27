@@ -698,6 +698,18 @@ class Bound:
                 )
             )
 
+            if calculate_targ:
+                print(
+                    "{:.2f} %% of core in target is vapourized".format(
+                        100 * self.targ_core_vapour_fraction
+                    )
+                )
+                print(
+                    "{:.2f} %% of mantle in target is vapourized".format(
+                        100 * self.targ_mantle_vapour_fraction
+                    )
+                )
+
     def rem_vap_fraction(self, rem_id=1, verbose=1):
         """Given remnant id, calculated the vapour fraction in the remnant
 
