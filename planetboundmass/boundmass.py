@@ -478,6 +478,8 @@ class Bound:
 
             self.bound = bound_cp
 
+        self.calculate_mass(verbose=verbose)
+
     def print_info(self):
         i = 0
         print("++++++++++++++++++++++++++++++++++++++++++++++")
