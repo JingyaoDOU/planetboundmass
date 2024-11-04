@@ -332,7 +332,7 @@ class Bound:
             array_name = self.Di_id_mat[mat_id] + "_mass"
             element_mass_array[array_name] = np.zeros(self.num_rem)
 
-        for remnant_id in self.bound_id:
+        for remnant_id in self.bound_id[:-1]:
             remnant_id = int(remnant_id)
             arg_bound_out = self.bound == remnant_id
             m_bound = self.m[arg_bound_out]
