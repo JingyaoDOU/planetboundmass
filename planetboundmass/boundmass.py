@@ -388,7 +388,7 @@ class Bound:
         if self.verbose != 0:
             self.print_info()
 
-    def re_distribute(self, bid, rem_bid, verbose=1):
+    def re_distribute(self, verbose=1):
         """After the bound remnants are found, recalcuate is any particles in a remnant should be redistributed to other remnants.
 
         Args:
