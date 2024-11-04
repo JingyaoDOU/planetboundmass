@@ -319,6 +319,8 @@ class Bound:
 
     def calculate_mass(self):
         """recalculate the mass of the bound particles after re-disribution"""
+        if self.num_rem == 1:
+            self.num_rem = 2  # to make sure the following calculation works
         m_rem = np.zeros(self.num_rem)
         num_par_rem = np.zeros(self.num_rem, dtype=int)
         mass_ratio = np.zeros(self.num_rem)  # M_rem / M_total
