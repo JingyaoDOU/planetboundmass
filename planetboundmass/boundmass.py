@@ -580,6 +580,7 @@ class Bound:
         self.total_mass = M_tot
 
         self.find_bound()
+        self.re_distribute()
 
         accretion_rate = (self.m_rem[0] - self.m_tar) / (self.total_mass - self.m_tar)
 
