@@ -77,8 +77,6 @@ def loadsw_to_woma(snapshot, unit="mks", if_R_atmos=False, if_core_radius=False)
     # if atmos_id or core_id is empty, set to np.nan
     if len(atmos_id) == 0:
         atmos_id = np.nan
-    if len(core_id) == 0:
-        core_id = np.nan
 
     if not if_R_atmos:
         pos_to_use = pos[matid != atmos_id]
