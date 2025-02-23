@@ -71,7 +71,7 @@ def loadsw_to_woma(snapshot, unit="mks", if_R_atmos=False, if_core_radius=False)
     core_key_list = np.array([401, 402])
     atmos_key_list = np.array([0, 1, 2, 200, 305, 306, 307])
     uniq_mat = np.unique(matid)
-    atmos_id = np.intersect1d(atmos_key_list, uniq_mat)
+    atmos_id = np.intersect1d(atmos_key_list, uniq_mat)[0]
     core_id = np.intersect1d(core_key_list, uniq_mat)[0]
 
     if not if_R_atmos:
