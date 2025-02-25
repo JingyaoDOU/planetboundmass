@@ -402,7 +402,9 @@ class Bound:
         if np.max(self.bound_id) > 1:
             for bid in self.bound_id[::-1]:
                 bound_cp = copy(self.bound)
-                for rem_bid in self.bound_id[self.bound_id != bid]:
+                for rem_bid in self.bound_id[
+                    ~np.isin(self.bound_id, [0, bid])
+                ]:  # do not redistribute back to remnant itself and remnant 0
                     rem_m = np.sum(self.m[self.bound == rem_bid])
 
                     rem_com = (
